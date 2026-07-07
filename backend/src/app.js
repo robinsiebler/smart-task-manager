@@ -6,6 +6,7 @@ const app = express();
 app.use(express.json());
 
 app.use('/api/users', require('./routes/user.routes'));
+app.use('/api/tasks', require('./routes/task.routes'));
 
 app.use(errorMiddleware); // must be registered last
 
