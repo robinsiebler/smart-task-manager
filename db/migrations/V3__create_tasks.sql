@@ -7,7 +7,7 @@ CREATE TABLE tasks (
     priority        VARCHAR2(10) NOT NULL,
     status          VARCHAR2(20) NOT NULL,
     due_date        DATE NOT NULL,
-    created_date    TIMESTAMP NOT NULL DEFAULT SYS_EXTRACT_UTC(SYSTIMESTAMP),
+    created_date    TIMESTAMP DEFAULT SYS_EXTRACT_UTC(SYSTIMESTAMP) NOT NULL,
     CONSTRAINT fk_tasks_user FOREIGN KEY (user_id)
         REFERENCES users(user_id) ON DELETE CASCADE,
     CONSTRAINT fk_tasks_category FOREIGN KEY (category_id)
