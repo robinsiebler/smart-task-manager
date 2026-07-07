@@ -9,8 +9,10 @@
     "test": "node --test"
   },
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
     "oracledb": "^6.5.1"
   }
 }
