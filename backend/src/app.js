@@ -5,8 +5,7 @@ const app = express();
 
 app.use(express.json());
 
-// routes mount here, e.g.:
-// app.use('/api/auth', require('./routes/auth.routes'));
+app.use('/api/users', require('./routes/user.routes'));
 
 app.use(errorMiddleware); // must be registered last
 
