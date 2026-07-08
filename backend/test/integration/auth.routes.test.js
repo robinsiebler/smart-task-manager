@@ -118,6 +118,31 @@ test('rejects registration with a short password with 400', async () => {
   assert.match(body.error, /at least 8 characters/);
 });
 
+test('rejects registration with a username over 100 characters with 400', async () => {
+  const response = await postJson('/api/users/register', {
+    username: 'x'.repeat(101),
+    email: uniqueEmail('longusername'),
+    password: 'correcthorse123',
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.match(body.error, /100 characters or fewer/);
+});
+
+test('rejects registration with an email over 255 characters with 400', async () => {
+  const longEmail = `${'x'.repeat(250)}@example.com`;
+  const response = await postJson('/api/users/register', {
+    username: 'Long Email',
+    email: longEmail,
+    password: 'correcthorse123',
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.match(body.error, /255 characters or fewer/);
+});
+
 test('logs in with email as the identifier and returns a verifiable JWT', async () => {
   const email = uniqueEmail('login');
   const password = 'correcthorse123';
