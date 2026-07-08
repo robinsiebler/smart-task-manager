@@ -72,3 +72,100 @@ test('creates a task with multiple categories and updates them from the edit for
 
   await expect(card.locator('.badge--category')).toHaveCount(1);
 });
+
+test('shows the empty-state message when there are no tasks', async ({ page, request }) => {
+  const user = await registerUser(request, 'e2eemptystate');
+  createdUserIds.push(user.userId);
+  await loginAs(page, user.email, user.password);
+
+  await expect(page.locator('.empty-state')).toHaveText(/No tasks yet/);
+});
+
+test('creates a task with a description and shows a status message', async ({ page, request }) => {
+  const user = await registerUser(request, 'e2edescription');
+  createdUserIds.push(user.userId);
+  await loginAs(page, user.email, user.password);
+
+  await page.click('#add-task-btn');
+  await page.fill('#task-title', 'Task with a description');
+  await page.fill('#task-description', 'Some helpful detail.');
+  await page.selectOption('#task-priority', 'Medium');
+  await page.fill('#task-due-date', '2026-08-01');
+  await page.click('#task-form button[type="submit"]');
+
+  await expect(page.locator('#status-message')).toHaveText('Task created.');
+  const card = page.locator('.task-card', { hasText: 'Task with a description' });
+  await expect(card.locator('.task-card__description')).toHaveText('Some helpful detail.');
+});
+
+test('changes status via the dropdown and updates the badge', async ({ page, request }) => {
+  const user = await registerUser(request, 'e2estatusdropdown');
+  createdUserIds.push(user.userId);
+  await loginAs(page, user.email, user.password);
+
+  await page.click('#add-task-btn');
+  await page.fill('#task-title', 'Status dropdown task');
+  await page.selectOption('#task-priority', 'Medium');
+  await page.fill('#task-due-date', '2026-08-01');
+  await page.click('#task-form button[type="submit"]');
+
+  const card = page.locator('.task-card', { hasText: 'Status dropdown task' });
+  await card.locator('button:has-text("Edit")').click();
+  await page.selectOption('#task-status', 'In Progress');
+  await page.click('#task-form button[type="submit"]');
+
+  await expect(page.locator('#status-message')).toHaveText('Task updated.');
+  await expect(card.locator('.badge--status-in-progress')).toHaveText('In Progress');
+});
+
+test('marks a task with a past due date as overdue', async ({ page, request }) => {
+  const user = await registerUser(request, 'e2eoverdue');
+  createdUserIds.push(user.userId);
+  await loginAs(page, user.email, user.password);
+
+  await page.click('#add-task-btn');
+  await page.fill('#task-title', 'Overdue task');
+  await page.selectOption('#task-priority', 'Medium');
+  await page.fill('#task-due-date', '2020-01-01');
+  await page.click('#task-form button[type="submit"]');
+
+  const card = page.locator('.task-card', { hasText: 'Overdue task' });
+  await expect(card).toHaveClass(/task-card--overdue/);
+});
+
+test('shows a status message after deleting a task', async ({ page, request }) => {
+  page.on('dialog', (dialog) => dialog.accept());
+  const user = await registerUser(request, 'e2edeletemsg');
+  createdUserIds.push(user.userId);
+  await loginAs(page, user.email, user.password);
+
+  await page.click('#add-task-btn');
+  await page.fill('#task-title', 'Task to delete');
+  await page.selectOption('#task-priority', 'Medium');
+  await page.fill('#task-due-date', '2026-08-01');
+  await page.click('#task-form button[type="submit"]');
+
+  await page.locator('.task-card', { hasText: 'Task to delete' }).locator('button:has-text("Delete")').click();
+  await expect(page.locator('#status-message')).toHaveText('Task deleted.');
+});
+
+test('discards unsaved changes when the form is cancelled or the overlay is clicked away', async ({
+  page,
+  request,
+}) => {
+  const user = await registerUser(request, 'e2ecancelform');
+  createdUserIds.push(user.userId);
+  await loginAs(page, user.email, user.password);
+
+  await page.click('#add-task-btn');
+  await page.fill('#task-title', 'Should not be saved (cancel)');
+  await page.click('#cancel-form-btn');
+  await expect(page.locator('#task-form-overlay')).toBeHidden();
+  await expect(page.locator('.task-card', { hasText: 'Should not be saved (cancel)' })).toHaveCount(0);
+
+  await page.click('#add-task-btn');
+  await page.fill('#task-title', 'Should not be saved (overlay click)');
+  await page.locator('#task-form-overlay').click({ position: { x: 5, y: 5 } });
+  await expect(page.locator('#task-form-overlay')).toBeHidden();
+  await expect(page.locator('.task-card', { hasText: 'Should not be saved (overlay click)' })).toHaveCount(0);
+});
