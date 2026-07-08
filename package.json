@@ -1,0 +1,14 @@
+{
+  "name": "smart-task-manager",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dev tooling only (linting) -- the app itself lives in backend/, frontend/, and e2e/.",
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "eslint": "^9.13.0",
+    "globals": "^15.11.0"
+  }
+}
