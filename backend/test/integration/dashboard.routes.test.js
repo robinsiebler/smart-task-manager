@@ -70,14 +70,26 @@ async function createTestCategory(userId, name) {
   }
 }
 
-async function createTestTask(userId, { categoryId = null, title = 'Task', priority = 'Medium', status = 'Pending', dueDate }) {
+async function createTestTask(
+  userId,
+  { categoryIds = [], title = 'Task', priority = 'Medium', status = 'Pending', dueDate }
+) {
   const connection = await getPool().getConnection();
   try {
-    await connection.execute(
-      `INSERT INTO tasks (user_id, category_id, title, priority, status, due_date)
-       VALUES (:userId, :categoryId, :title, :priority, :status, :dueDate)`,
-      { userId, categoryId, title, priority, status, dueDate }
+    const result = await connection.execute(
+      `INSERT INTO tasks (user_id, title, priority, status, due_date)
+       VALUES (:userId, :title, :priority, :status, :dueDate)
+       RETURNING task_id INTO :taskId`,
+      { userId, title, priority, status, dueDate, taskId: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER } }
     );
+    const taskId = result.outBinds.taskId[0];
+    for (const categoryId of categoryIds) {
+      await connection.execute('INSERT INTO task_categories (task_id, category_id) VALUES (:taskId, :categoryId)', {
+        taskId,
+        categoryId,
+      });
+    }
+    return taskId;
   } finally {
     await connection.close();
   }
@@ -159,10 +171,10 @@ test('breaks tasks down by category, including an Uncategorized bucket', async (
   const personalId = await createTestCategory(user.userId, 'Personal');
   const futureDue = daysFromToday(10);
 
-  await createTestTask(user.userId, { categoryId: workId, dueDate: futureDue });
-  await createTestTask(user.userId, { categoryId: workId, dueDate: futureDue });
-  await createTestTask(user.userId, { categoryId: personalId, dueDate: futureDue });
-  await createTestTask(user.userId, { categoryId: null, dueDate: futureDue });
+  await createTestTask(user.userId, { categoryIds: [workId], dueDate: futureDue });
+  await createTestTask(user.userId, { categoryIds: [workId], dueDate: futureDue });
+  await createTestTask(user.userId, { categoryIds: [personalId], dueDate: futureDue });
+  await createTestTask(user.userId, { categoryIds: [], dueDate: futureDue });
 
   const response = await authedGet(user.token);
   const body = await response.json();
@@ -171,6 +183,30 @@ test('breaks tasks down by category, including an Uncategorized bucket', async (
   assert.equal(byCategory.Work, 2);
   assert.equal(byCategory.Personal, 1);
   assert.equal(byCategory.Uncategorized, 1);
+});
+
+test('a task with multiple categories contributes to each category\'s count without inflating priority counts', async () => {
+  const user = await createTestUser('multicatdash');
+  const workId = await createTestCategory(user.userId, 'Work');
+  const urgentId = await createTestCategory(user.userId, 'Urgent');
+  const futureDue = daysFromToday(10);
+
+  // one task with BOTH categories, plus one single-category task for contrast
+  await createTestTask(user.userId, { categoryIds: [workId, urgentId], priority: 'High', dueDate: futureDue });
+  await createTestTask(user.userId, { categoryIds: [workId], priority: 'Low', dueDate: futureDue });
+
+  const response = await authedGet(user.token);
+  const body = await response.json();
+
+  assert.equal(body.dashboard.total, 2);
+
+  const byCategory = Object.fromEntries(body.dashboard.byCategory.map((c) => [c.category, c.count]));
+  assert.equal(byCategory.Work, 2);
+  assert.equal(byCategory.Urgent, 1);
+
+  const byPriority = Object.fromEntries(body.dashboard.byPriority.map((p) => [p.priority, p.count]));
+  assert.equal(byPriority.High, 1);
+  assert.equal(byPriority.Low, 1);
 });
 
 test('breaks tasks down by priority', async () => {

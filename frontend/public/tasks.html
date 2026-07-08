@@ -90,11 +90,9 @@
       <input type="date" id="task-due-date" name="dueDate" />
       <p class="field-error" id="due-date-error"></p>
 
-      <label for="task-category">Category</label>
+      <span id="task-categories-label">Categories</span>
       <div class="category-row">
-        <select id="task-category" name="categoryId">
-          <option value="">No category</option>
-        </select>
+        <div id="task-categories" class="category-checkbox-list" role="group" aria-labelledby="task-categories-label"></div>
         <button type="button" id="new-category-btn" class="btn btn-secondary">+ New</button>
       </div>
 

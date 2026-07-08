@@ -27,9 +27,10 @@ async function getBreakdowns(userId) {
          GROUPING(t.priority) AS is_category_row,
          c.name AS category_name,
          t.priority AS priority,
-         COUNT(*) AS task_count
+         COUNT(DISTINCT t.task_id) AS task_count
        FROM tasks t
-       LEFT JOIN categories c ON c.category_id = t.category_id
+       LEFT JOIN task_categories tc ON tc.task_id = t.task_id
+       LEFT JOIN categories c ON c.category_id = tc.category_id
        WHERE t.user_id = :userId
        GROUP BY GROUPING SETS ((c.name), (t.priority))`,
       { userId }

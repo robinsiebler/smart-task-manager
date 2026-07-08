@@ -3,10 +3,15 @@ const HttpError = require('../utils/HttpError');
 
 const DEFAULT_STATUS = 'Pending';
 
-async function assertCategoryOwnership(categoryId, userId) {
-  if (categoryId === undefined || categoryId === null) return;
-  const owned = await taskModel.categoryBelongsToUser(categoryId, userId);
-  if (!owned) {
+function dedupe(ids) {
+  return [...new Set(ids)];
+}
+
+async function assertCategoryOwnership(categoryIds, userId) {
+  const uniqueIds = dedupe(categoryIds);
+  if (uniqueIds.length === 0) return;
+  const ownedCount = await taskModel.countOwnedCategories(uniqueIds, userId);
+  if (ownedCount !== uniqueIds.length) {
     throw new HttpError(400, 'Invalid category');
   }
 }
@@ -32,14 +37,15 @@ async function getTask(taskId, userId) {
   return task;
 }
 
-async function createTask(userId, { title, description, categoryId, priority, status, dueDate }) {
-  await assertCategoryOwnership(categoryId, userId);
+async function createTask(userId, { title, description, categoryIds, priority, status, dueDate }) {
+  const cleanCategoryIds = dedupe(categoryIds || []);
+  await assertCategoryOwnership(cleanCategoryIds, userId);
 
   return taskModel.create({
     userId,
     title: title.trim(),
     description: description ? description.trim() : null,
-    categoryId: categoryId ?? null,
+    categoryIds: cleanCategoryIds,
     priority,
     status: status || DEFAULT_STATUS,
     dueDate: new Date(dueDate),
@@ -55,17 +61,21 @@ async function updateTask(taskId, userId, fields) {
     throw new HttpError(409, 'Completed tasks cannot be modified');
   }
 
-  await assertCategoryOwnership(fields.categoryId, userId);
+  let cleanCategoryIds;
+  if (fields.categoryIds !== undefined) {
+    cleanCategoryIds = dedupe(fields.categoryIds);
+    await assertCategoryOwnership(cleanCategoryIds, userId);
+  }
 
   const updateFields = {};
   if (fields.title !== undefined) updateFields.title = fields.title.trim();
   if (fields.description !== undefined) {
     updateFields.description = fields.description ? fields.description.trim() : null;
   }
-  if (fields.categoryId !== undefined) updateFields.categoryId = fields.categoryId;
   if (fields.priority !== undefined) updateFields.priority = fields.priority;
   if (fields.status !== undefined) updateFields.status = fields.status;
   if (fields.dueDate !== undefined) updateFields.dueDate = new Date(fields.dueDate);
+  if (cleanCategoryIds !== undefined) updateFields.categoryIds = cleanCategoryIds;
 
   return taskModel.update(taskId, userId, updateFields);
 }

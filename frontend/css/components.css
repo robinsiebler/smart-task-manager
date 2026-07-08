@@ -192,6 +192,21 @@
   flex: 1;
 }
 
+.category-checkbox-list {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.8rem;
+  align-items: center;
+}
+
+.category-checkbox-list label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: normal;
+}
+
 .new-category-row {
   display: flex;
   gap: 0.5rem;

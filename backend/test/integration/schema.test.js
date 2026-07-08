@@ -93,42 +93,59 @@ test('accepts a task with a valid priority and status', async () => {
   });
 });
 
-test('deleting a category sets its tasks category_id to NULL instead of deleting them', async () => {
+test('deleting a category removes the association but not the task, leaving other categories intact', async () => {
   await withConnection(async (connection) => {
-    const categoryResult = await connection.execute(
-      `INSERT INTO categories (user_id, name) VALUES (:user_id, 'Temp Category')
+    const workCategory = await connection.execute(
+      `INSERT INTO categories (user_id, name) VALUES (:user_id, 'Temp Work')
        RETURNING category_id INTO :category_id`,
-      {
-        user_id: testUserId,
-        category_id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
-      }
+      { user_id: testUserId, category_id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER } }
     );
-    const categoryId = categoryResult.outBinds.category_id[0];
+    const workId = workCategory.outBinds.category_id[0];
+
+    const urgentCategory = await connection.execute(
+      `INSERT INTO categories (user_id, name) VALUES (:user_id, 'Temp Urgent')
+       RETURNING category_id INTO :category_id`,
+      { user_id: testUserId, category_id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER } }
+    );
+    const urgentId = urgentCategory.outBinds.category_id[0];
 
     const taskResult = await connection.execute(
-      `INSERT INTO tasks (user_id, category_id, title, priority, status, due_date)
-       VALUES (:user_id, :category_id, 'Categorized task', 'Medium', 'Pending', SYSDATE)
+      `INSERT INTO tasks (user_id, title, priority, status, due_date)
+       VALUES (:user_id, 'Categorized task', 'Medium', 'Pending', SYSDATE)
        RETURNING task_id INTO :task_id`,
-      {
-        user_id: testUserId,
-        category_id: categoryId,
-        task_id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
-      }
+      { user_id: testUserId, task_id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER } }
     );
     const taskId = taskResult.outBinds.task_id[0];
 
-    await connection.execute('DELETE FROM categories WHERE category_id = :category_id', {
-      category_id: categoryId,
+    await connection.execute('INSERT INTO task_categories (task_id, category_id) VALUES (:task_id, :category_id)', {
+      task_id: taskId,
+      category_id: workId,
+    });
+    await connection.execute('INSERT INTO task_categories (task_id, category_id) VALUES (:task_id, :category_id)', {
+      task_id: taskId,
+      category_id: urgentId,
     });
 
-    const check = await connection.execute('SELECT category_id FROM tasks WHERE task_id = :task_id', {
+    await connection.execute('DELETE FROM categories WHERE category_id = :category_id', { category_id: workId });
+
+    const taskCheck = await connection.execute('SELECT task_id FROM tasks WHERE task_id = :task_id', {
       task_id: taskId,
     });
-    assert.equal(check.rows[0].CATEGORY_ID, null);
+    assert.equal(taskCheck.rows.length, 1, 'the task itself should still exist');
+
+    const remainingCategories = await connection.execute(
+      'SELECT category_id FROM task_categories WHERE task_id = :task_id',
+      { task_id: taskId }
+    );
+    assert.deepEqual(
+      remainingCategories.rows.map((r) => r.CATEGORY_ID),
+      [urgentId],
+      'only the deleted category association should be gone, Urgent should remain'
+    );
   });
 });
 
-test('deleting a user cascades to their categories and tasks', async () => {
+test('deleting a user cascades to their categories, tasks, and task_categories associations', async () => {
   let categoryId;
   let taskId;
 
@@ -144,16 +161,20 @@ test('deleting a user cascades to their categories and tasks', async () => {
     categoryId = categoryResult.outBinds.category_id[0];
 
     const taskResult = await connection.execute(
-      `INSERT INTO tasks (user_id, category_id, title, priority, status, due_date)
-       VALUES (:user_id, :category_id, 'Cascade task', 'Low', 'Pending', SYSDATE)
+      `INSERT INTO tasks (user_id, title, priority, status, due_date)
+       VALUES (:user_id, 'Cascade task', 'Low', 'Pending', SYSDATE)
        RETURNING task_id INTO :task_id`,
       {
         user_id: testUserId,
-        category_id: categoryId,
         task_id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
       }
     );
     taskId = taskResult.outBinds.task_id[0];
+
+    await connection.execute('INSERT INTO task_categories (task_id, category_id) VALUES (:task_id, :category_id)', {
+      task_id: taskId,
+      category_id: categoryId,
+    });
 
     await connection.execute('DELETE FROM users WHERE user_id = :user_id', { user_id: testUserId });
   });
@@ -169,6 +190,12 @@ test('deleting a user cascades to their categories and tasks', async () => {
       task_id: taskId,
     });
     assert.equal(taskCheck.rows.length, 0);
+
+    const junctionCheck = await connection.execute(
+      'SELECT * FROM task_categories WHERE task_id = :task_id',
+      { task_id: taskId }
+    );
+    assert.equal(junctionCheck.rows.length, 0);
   });
 
   testUserId = null; // already deleted above; afterEach delete of null id is a no-op
