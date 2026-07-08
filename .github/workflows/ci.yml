@@ -42,7 +42,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: backend/package-lock.json
+          cache-dependency-path: |
+            backend/package-lock.json
+            e2e/package-lock.json
 
       - name: Install backend dependencies
         working-directory: backend
@@ -54,4 +56,16 @@ jobs:
 
       - name: Run tests
         working-directory: backend
+        run: npm test
+
+      - name: Install e2e dependencies
+        working-directory: e2e
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Run e2e tests
+        working-directory: e2e
         run: npm test
