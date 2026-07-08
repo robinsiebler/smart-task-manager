@@ -1,6 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const { deleteUser } = require('../helpers/db');
-const { registerUser, uniqueSuffix, DEFAULT_PASSWORD } = require('../helpers/api');
+const { registerUser, uniqueSuffix } = require('../helpers/api');
 const { loginAs } = require('../helpers/ui');
 
 let createdUserIds;

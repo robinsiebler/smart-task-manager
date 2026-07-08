@@ -206,6 +206,18 @@ test('rejects login for a nonexistent identifier with the same generic 401 messa
   assert.equal(body.error, 'Invalid email/username or password');
 });
 
+test('rejects a malformed JSON body with a clean message instead of the raw parser error', async () => {
+  const response = await fetch(`${baseUrl}/api/users/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{invalid json',
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.equal(body.error, 'Malformed JSON body');
+});
+
 test('stores the password as a bcrypt hash, never plaintext', async () => {
   const email = uniqueEmail('hash-check');
   const password = 'correcthorse123';

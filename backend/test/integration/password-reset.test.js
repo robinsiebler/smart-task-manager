@@ -137,6 +137,30 @@ test('forgot-password for an existing email logs a token and stores it with a ~1
   }
 });
 
+test('forgot-password does not log the reset token when NODE_ENV is production', async () => {
+  const email = uniqueEmail('forgot-prod');
+  const originalNodeEnv = process.env.NODE_ENV;
+  try {
+    await registerUser(email, 'correcthorse123');
+
+    process.env.NODE_ENV = 'production';
+    const spy = spyOnConsoleLog();
+    const response = await postJson('/api/auth/forgot-password', { email });
+    spy.restore();
+    const body = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.match(body.message, /If an account exists for this email/);
+    assert.equal(
+      spy.calls.find((call) => call.includes('[Password Reset]')),
+      undefined
+    );
+  } finally {
+    process.env.NODE_ENV = originalNodeEnv;
+    await deleteUserByEmail(email);
+  }
+});
+
 test('forgot-password for a nonexistent email returns the same generic message with no console log', async () => {
   const email = uniqueEmail('forgot-nobody');
 
