@@ -237,6 +237,67 @@ test('rejects categoryIds that are not an array of numbers', async () => {
   assert.match(body.error, /categoryIds must be an array of numbers/);
 });
 
+test('rejects categoryIds containing negative numbers, zero, or non-integers', async () => {
+  const user = await createTestUser('badcategoryidsvalues');
+
+  for (const badValue of [-1, 0, 1.5, NaN]) {
+    const response = await authedRequest(user.token, '/api/tasks', {
+      method: 'POST',
+      body: JSON.stringify(validTaskPayload({ categoryIds: [badValue] })),
+    });
+    const body = await response.json();
+
+    assert.equal(response.status, 400, `expected 400 for categoryIds: [${badValue}]`);
+    assert.match(body.error, /categoryIds must be an array of numbers/);
+  }
+});
+
+test('rejects a task title over 200 characters', async () => {
+  const user = await createTestUser('longtitle');
+  const response = await authedRequest(user.token, '/api/tasks', {
+    method: 'POST',
+    body: JSON.stringify(validTaskPayload({ title: 'x'.repeat(201) })),
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.match(body.error, /200 characters or fewer/);
+});
+
+test('accepts a task title of exactly 200 characters', async () => {
+  const user = await createTestUser('maxtitle');
+  const response = await authedRequest(user.token, '/api/tasks', {
+    method: 'POST',
+    body: JSON.stringify(validTaskPayload({ title: 'x'.repeat(200) })),
+  });
+
+  assert.equal(response.status, 201);
+});
+
+test('rejects a task description over 4000 characters', async () => {
+  const user = await createTestUser('longdesc');
+  const response = await authedRequest(user.token, '/api/tasks', {
+    method: 'POST',
+    body: JSON.stringify(validTaskPayload({ description: 'x'.repeat(4001) })),
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.match(body.error, /4000 characters or fewer/);
+});
+
+test('rejects a non-string task description', async () => {
+  const user = await createTestUser('badtypedesc');
+  const response = await authedRequest(user.token, '/api/tasks', {
+    method: 'POST',
+    body: JSON.stringify(validTaskPayload({ description: 12345 })),
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.match(body.error, /Description must be a string/);
+});
+
 test('rejects a categoryId that belongs to a different user', async () => {
   const owner = await createTestUser('catowner');
   const attacker = await createTestUser('catattacker');
@@ -443,6 +504,24 @@ test('rejects an update with no fields', async () => {
 
   assert.equal(response.status, 400);
   assert.match(body.error, /At least one field/);
+});
+
+test('rejects updating a task title to over 200 characters', async () => {
+  const user = await createTestUser('longtitleupdate');
+  const createResponse = await authedRequest(user.token, '/api/tasks', {
+    method: 'POST',
+    body: JSON.stringify(validTaskPayload()),
+  });
+  const created = (await createResponse.json()).task;
+
+  const response = await authedRequest(user.token, `/api/tasks/${created.taskId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ title: 'x'.repeat(201) }),
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.match(body.error, /200 characters or fewer/);
 });
 
 test('returns 404 updating a task owned by a different user', async () => {

@@ -2,6 +2,10 @@ const HttpError = require('../utils/HttpError');
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
+const MAX_USERNAME_LENGTH = 100;
+const MAX_EMAIL_LENGTH = 255;
+const MAX_TITLE_LENGTH = 200;
+const MAX_DESCRIPTION_LENGTH = 4000;
 
 function validateRegister(req, res, next) {
   const { username, email, password } = req.body;
@@ -9,8 +13,14 @@ function validateRegister(req, res, next) {
   if (!username || typeof username !== 'string' || !username.trim()) {
     return next(new HttpError(400, 'Username is required'));
   }
+  if (username.trim().length > MAX_USERNAME_LENGTH) {
+    return next(new HttpError(400, `Username must be ${MAX_USERNAME_LENGTH} characters or fewer`));
+  }
   if (!email || !EMAIL_PATTERN.test(email)) {
     return next(new HttpError(400, 'A valid email is required'));
+  }
+  if (email.length > MAX_EMAIL_LENGTH) {
+    return next(new HttpError(400, `Email must be ${MAX_EMAIL_LENGTH} characters or fewer`));
   }
   if (!password || typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
     return next(new HttpError(400, `Password must be at least ${MIN_PASSWORD_LENGTH} characters`));
@@ -40,14 +50,25 @@ function isValidDate(value) {
 }
 
 function isValidCategoryIdsArray(value) {
-  return Array.isArray(value) && value.every((id) => typeof id === 'number');
+  return Array.isArray(value) && value.every((id) => Number.isInteger(id) && id > 0);
+}
+
+function isValidOptionalDescription(description) {
+  if (description === undefined || description === null) return true;
+  return typeof description === 'string' && description.trim().length <= MAX_DESCRIPTION_LENGTH;
 }
 
 function validateCreateTask(req, res, next) {
-  const { title, priority, status, dueDate, categoryIds } = req.body;
+  const { title, description, priority, status, dueDate, categoryIds } = req.body;
 
   if (!title || typeof title !== 'string' || !title.trim()) {
     return next(new HttpError(400, 'Title is required'));
+  }
+  if (title.trim().length > MAX_TITLE_LENGTH) {
+    return next(new HttpError(400, `Title must be ${MAX_TITLE_LENGTH} characters or fewer`));
+  }
+  if (!isValidOptionalDescription(description)) {
+    return next(new HttpError(400, `Description must be a string of ${MAX_DESCRIPTION_LENGTH} characters or fewer`));
   }
   if (!priority || !PRIORITY_VALUES.includes(priority)) {
     return next(new HttpError(400, `Priority must be one of: ${PRIORITY_VALUES.join(', ')}`));
@@ -74,6 +95,12 @@ function validateUpdateTask(req, res, next) {
   }
   if (title !== undefined && (typeof title !== 'string' || !title.trim())) {
     return next(new HttpError(400, 'Title must be a non-empty string'));
+  }
+  if (title !== undefined && title.trim().length > MAX_TITLE_LENGTH) {
+    return next(new HttpError(400, `Title must be ${MAX_TITLE_LENGTH} characters or fewer`));
+  }
+  if (!isValidOptionalDescription(description)) {
+    return next(new HttpError(400, `Description must be a string of ${MAX_DESCRIPTION_LENGTH} characters or fewer`));
   }
   if (priority !== undefined && !PRIORITY_VALUES.includes(priority)) {
     return next(new HttpError(400, `Priority must be one of: ${PRIORITY_VALUES.join(', ')}`));
@@ -175,8 +202,14 @@ function validateUpdateProfile(req, res, next) {
   if (username !== undefined && (typeof username !== 'string' || !username.trim())) {
     return next(new HttpError(400, 'Username must be a non-empty string'));
   }
+  if (username !== undefined && username.trim().length > MAX_USERNAME_LENGTH) {
+    return next(new HttpError(400, `Username must be ${MAX_USERNAME_LENGTH} characters or fewer`));
+  }
   if (email !== undefined && !EMAIL_PATTERN.test(email)) {
     return next(new HttpError(400, 'A valid email is required'));
+  }
+  if (email !== undefined && email.length > MAX_EMAIL_LENGTH) {
+    return next(new HttpError(400, `Email must be ${MAX_EMAIL_LENGTH} characters or fewer`));
   }
 
   next();

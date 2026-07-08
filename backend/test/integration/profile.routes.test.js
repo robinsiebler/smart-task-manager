@@ -135,6 +135,30 @@ test('rejects a profile update with a malformed email', async () => {
   assert.match(body.error, /valid email/);
 });
 
+test('rejects a profile update with a username over 100 characters', async () => {
+  const user = await createTestUser('longusernameupd');
+  const response = await authedRequest(user.token, '/api/users/me', {
+    method: 'PUT',
+    body: JSON.stringify({ username: 'x'.repeat(101) }),
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.match(body.error, /100 characters or fewer/);
+});
+
+test('rejects a profile update with an email over 255 characters', async () => {
+  const user = await createTestUser('longemailupd');
+  const response = await authedRequest(user.token, '/api/users/me', {
+    method: 'PUT',
+    body: JSON.stringify({ email: `${'x'.repeat(250)}@example.com` }),
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.match(body.error, /255 characters or fewer/);
+});
+
 test('rejects updating to a username already taken by another user', async () => {
   const userA = await createTestUser('takenusernamea');
   const userB = await createTestUser('takenusernameb');
