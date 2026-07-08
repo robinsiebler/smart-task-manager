@@ -132,6 +132,99 @@ test('allows the same category name across different users', async () => {
   assert.equal(responseB.status, 201);
 });
 
+test('deletes a category and returns 204', async () => {
+  const user = await createTestUser('deletecat');
+  const createResponse = await authedRequest(user.token, '/api/categories', {
+    method: 'POST',
+    body: JSON.stringify({ name: 'Temporary' }),
+  });
+  const { category } = await createResponse.json();
+
+  const deleteResponse = await authedRequest(user.token, `/api/categories/${category.categoryId}`, {
+    method: 'DELETE',
+  });
+  assert.equal(deleteResponse.status, 204);
+
+  const listResponse = await authedRequest(user.token, '/api/categories');
+  const listBody = await listResponse.json();
+  assert.deepEqual(
+    listBody.categories.map((c) => c.categoryId),
+    []
+  );
+});
+
+test('rejects deleting a category that belongs to another user', async () => {
+  const owner = await createTestUser('catdelowner');
+  const attacker = await createTestUser('catdelattacker');
+  const createResponse = await authedRequest(owner.token, '/api/categories', {
+    method: 'POST',
+    body: JSON.stringify({ name: 'Owned' }),
+  });
+  const { category } = await createResponse.json();
+
+  const deleteResponse = await authedRequest(attacker.token, `/api/categories/${category.categoryId}`, {
+    method: 'DELETE',
+  });
+  assert.equal(deleteResponse.status, 404);
+
+  const listResponse = await authedRequest(owner.token, '/api/categories');
+  const listBody = await listResponse.json();
+  assert.deepEqual(
+    listBody.categories.map((c) => c.categoryId),
+    [category.categoryId]
+  );
+});
+
+test('rejects deleting a nonexistent category', async () => {
+  const user = await createTestUser('catdelmissing');
+  const response = await authedRequest(user.token, '/api/categories/999999999', { method: 'DELETE' });
+  assert.equal(response.status, 404);
+});
+
+test('rejects deleting a category with an invalid id', async () => {
+  const user = await createTestUser('catdelbadid');
+  const response = await authedRequest(user.token, '/api/categories/not-a-number', { method: 'DELETE' });
+  assert.equal(response.status, 400);
+});
+
+test('deleting a category removes it from a task but leaves the task and its other categories intact', async () => {
+  const user = await createTestUser('catdeltask');
+  const workResponse = await authedRequest(user.token, '/api/categories', {
+    method: 'POST',
+    body: JSON.stringify({ name: 'Work' }),
+  });
+  const personalResponse = await authedRequest(user.token, '/api/categories', {
+    method: 'POST',
+    body: JSON.stringify({ name: 'Personal' }),
+  });
+  const { category: workCategory } = await workResponse.json();
+  const { category: personalCategory } = await personalResponse.json();
+
+  const taskResponse = await authedRequest(user.token, '/api/tasks', {
+    method: 'POST',
+    body: JSON.stringify({
+      title: 'Task with two categories',
+      priority: 'Medium',
+      dueDate: '2026-08-01',
+      categoryIds: [workCategory.categoryId, personalCategory.categoryId],
+    }),
+  });
+  const { task } = await taskResponse.json();
+
+  const deleteResponse = await authedRequest(user.token, `/api/categories/${workCategory.categoryId}`, {
+    method: 'DELETE',
+  });
+  assert.equal(deleteResponse.status, 204);
+
+  const getTaskResponse = await authedRequest(user.token, `/api/tasks/${task.taskId}`);
+  const getTaskBody = await getTaskResponse.json();
+  assert.equal(getTaskResponse.status, 200);
+  assert.deepEqual(
+    getTaskBody.task.categories.map((c) => c.categoryId),
+    [personalCategory.categoryId]
+  );
+});
+
 test('lists only the requesting user\'s categories, alphabetically', async () => {
   const userA = await createTestUser('listcata');
   const userB = await createTestUser('listcatb');

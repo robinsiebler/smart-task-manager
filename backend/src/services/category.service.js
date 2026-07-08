@@ -16,4 +16,11 @@ async function createCategory(userId, name) {
   }
 }
 
-module.exports = { listCategories, createCategory };
+async function deleteCategory(userId, categoryId) {
+  const deleted = await categoryModel.remove(categoryId, userId);
+  if (!deleted) {
+    throw new HttpError(404, 'Category not found');
+  }
+}
+
+module.exports = { listCategories, createCategory, deleteCategory };

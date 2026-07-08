@@ -39,4 +39,17 @@ async function create({ userId, name }) {
   return { categoryId, userId, name };
 }
 
-module.exports = { findAllByUser, create };
+async function remove(categoryId, userId) {
+  const connection = await getPool().getConnection();
+  try {
+    const result = await connection.execute(
+      'DELETE FROM categories WHERE category_id = :categoryId AND user_id = :userId',
+      { categoryId, userId }
+    );
+    return result.rowsAffected > 0;
+  } finally {
+    await connection.close();
+  }
+}
+
+module.exports = { findAllByUser, create, remove };
