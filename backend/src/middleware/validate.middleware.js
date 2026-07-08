@@ -32,4 +32,73 @@ function validateLogin(req, res, next) {
   next();
 }
 
-module.exports = { validateRegister, validateLogin };
+const PRIORITY_VALUES = ['High', 'Medium', 'Low'];
+const STATUS_VALUES = ['Pending', 'In Progress', 'Completed', 'Cancelled'];
+
+function isValidDate(value) {
+  return typeof value === 'string' && !Number.isNaN(Date.parse(value));
+}
+
+function validateCreateTask(req, res, next) {
+  const { title, priority, status, dueDate, categoryId } = req.body;
+
+  if (!title || typeof title !== 'string' || !title.trim()) {
+    return next(new HttpError(400, 'Title is required'));
+  }
+  if (!priority || !PRIORITY_VALUES.includes(priority)) {
+    return next(new HttpError(400, `Priority must be one of: ${PRIORITY_VALUES.join(', ')}`));
+  }
+  if (status !== undefined && !STATUS_VALUES.includes(status)) {
+    return next(new HttpError(400, `Status must be one of: ${STATUS_VALUES.join(', ')}`));
+  }
+  if (!dueDate || !isValidDate(dueDate)) {
+    return next(new HttpError(400, 'A valid dueDate is required'));
+  }
+  if (categoryId !== undefined && categoryId !== null && typeof categoryId !== 'number') {
+    return next(new HttpError(400, 'categoryId must be a number or null'));
+  }
+
+  next();
+}
+
+function validateUpdateTask(req, res, next) {
+  const { title, description, priority, status, dueDate, categoryId } = req.body;
+  const hasAnyField = [title, description, categoryId, priority, status, dueDate].some((v) => v !== undefined);
+
+  if (!hasAnyField) {
+    return next(new HttpError(400, 'At least one field must be provided'));
+  }
+  if (title !== undefined && (typeof title !== 'string' || !title.trim())) {
+    return next(new HttpError(400, 'Title must be a non-empty string'));
+  }
+  if (priority !== undefined && !PRIORITY_VALUES.includes(priority)) {
+    return next(new HttpError(400, `Priority must be one of: ${PRIORITY_VALUES.join(', ')}`));
+  }
+  if (status !== undefined && !STATUS_VALUES.includes(status)) {
+    return next(new HttpError(400, `Status must be one of: ${STATUS_VALUES.join(', ')}`));
+  }
+  if (dueDate !== undefined && !isValidDate(dueDate)) {
+    return next(new HttpError(400, 'dueDate must be a valid date'));
+  }
+  if (categoryId !== undefined && categoryId !== null && typeof categoryId !== 'number') {
+    return next(new HttpError(400, 'categoryId must be a number or null'));
+  }
+
+  next();
+}
+
+function validateTaskIdParam(req, res, next) {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return next(new HttpError(400, 'Invalid task id'));
+  }
+  next();
+}
+
+module.exports = {
+  validateRegister,
+  validateLogin,
+  validateCreateTask,
+  validateUpdateTask,
+  validateTaskIdParam,
+};
