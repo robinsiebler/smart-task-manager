@@ -1,5 +1,4 @@
 let categories = [];
-let categoriesById = new Map();
 let currentTasks = [];
 const currentFilters = { title: '', status: '', priority: '', categoryId: '', dueDate: '' };
 let currentSort = 'dueDate';
@@ -101,14 +100,15 @@ function renderTaskCard(task) {
 
   card.appendChild(meta);
 
-  const category = categoriesById.get(task.categoryId);
-  if (category) {
+  if (task.categories.length > 0) {
     const categoryRow = document.createElement('div');
     categoryRow.className = 'task-card__categories';
-    const categoryBadge = document.createElement('span');
-    categoryBadge.className = 'badge badge--category';
-    categoryBadge.textContent = category.name;
-    categoryRow.appendChild(categoryBadge);
+    for (const category of task.categories) {
+      const categoryBadge = document.createElement('span');
+      categoryBadge.className = 'badge badge--category';
+      categoryBadge.textContent = category.name;
+      categoryRow.appendChild(categoryBadge);
+    }
     card.appendChild(categoryRow);
   }
 
@@ -166,20 +166,27 @@ async function loadTasks() {
   renderTasks(sortTasks(currentTasks, currentSort));
 }
 
-function populateCategorySelect() {
-  const select = document.getElementById('task-category');
-  select.textContent = '';
+function getCheckedCategoryIds() {
+  return Array.from(document.querySelectorAll('#task-categories input:checked')).map((input) =>
+    Number(input.value)
+  );
+}
 
-  const noneOption = document.createElement('option');
-  noneOption.value = '';
-  noneOption.textContent = 'No category';
-  select.appendChild(noneOption);
+function populateCategoryCheckboxes(checkedIds = []) {
+  const container = document.getElementById('task-categories');
+  container.textContent = '';
 
   for (const category of categories) {
-    const option = document.createElement('option');
-    option.value = String(category.categoryId);
-    option.textContent = category.name;
-    select.appendChild(option);
+    const label = document.createElement('label');
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.value = String(category.categoryId);
+    checkbox.checked = checkedIds.includes(category.categoryId);
+
+    label.appendChild(checkbox);
+    label.append(category.name);
+    container.appendChild(label);
   }
 }
 
@@ -206,8 +213,7 @@ function populateCategoryFilterSelect() {
 async function loadCategories() {
   const data = await api.getCategories();
   categories = data.categories;
-  categoriesById = new Map(categories.map((c) => [c.categoryId, c]));
-  populateCategorySelect();
+  populateCategoryCheckboxes(getCheckedCategoryIds());
   populateCategoryFilterSelect();
 }
 
@@ -225,7 +231,7 @@ function getFormValues() {
     priority: document.getElementById('task-priority').value,
     status: document.getElementById('task-status').value,
     dueDate: document.getElementById('task-due-date').value,
-    categoryId: document.getElementById('task-category').value,
+    categoryIds: getCheckedCategoryIds(),
   };
 }
 
@@ -264,6 +270,7 @@ function openCreateForm() {
   form.reset();
   document.getElementById('task-id').value = '';
   document.getElementById('task-form-title').textContent = 'Add Task';
+  populateCategoryCheckboxes();
   document.getElementById('new-category-row').hidden = true;
   clearErrors();
   overlay.hidden = false;
@@ -279,7 +286,7 @@ function openEditForm(task) {
   document.getElementById('task-priority').value = task.priority;
   document.getElementById('task-status').value = task.status;
   document.getElementById('task-due-date').value = toDateInputValue(task.dueDate);
-  document.getElementById('task-category').value = task.categoryId ? String(task.categoryId) : '';
+  populateCategoryCheckboxes(task.categories.map((c) => c.categoryId));
   document.getElementById('new-category-row').hidden = true;
   clearErrors();
   overlay.hidden = false;
@@ -331,7 +338,7 @@ async function handleFormSubmit(event) {
     priority: values.priority,
     status: values.status,
     dueDate: values.dueDate,
-    categoryId: values.categoryId ? Number(values.categoryId) : null,
+    categoryIds: values.categoryIds,
   };
 
   try {
@@ -357,7 +364,7 @@ async function handleSaveCategory() {
   try {
     const { category } = await api.createCategory(name);
     await loadCategories();
-    document.getElementById('task-category').value = String(category.categoryId);
+    populateCategoryCheckboxes([...getCheckedCategoryIds(), category.categoryId]);
     document.getElementById('new-category-row').hidden = true;
     nameInput.value = '';
   } catch (err) {

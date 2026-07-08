@@ -90,14 +90,26 @@ function validTaskPayload(overrides = {}) {
   };
 }
 
-async function createTestTaskDirect(userId, { categoryId = null, title = 'Task', priority = 'Medium', status = 'Pending', dueDate }) {
+async function createTestTaskDirect(
+  userId,
+  { categoryIds = [], title = 'Task', priority = 'Medium', status = 'Pending', dueDate }
+) {
   const connection = await getPool().getConnection();
   try {
-    await connection.execute(
-      `INSERT INTO tasks (user_id, category_id, title, priority, status, due_date)
-       VALUES (:userId, :categoryId, :title, :priority, :status, :dueDate)`,
-      { userId, categoryId, title, priority, status, dueDate }
+    const result = await connection.execute(
+      `INSERT INTO tasks (user_id, title, priority, status, due_date)
+       VALUES (:userId, :title, :priority, :status, :dueDate)
+       RETURNING task_id INTO :taskId`,
+      { userId, title, priority, status, dueDate, taskId: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER } }
     );
+    const taskId = result.outBinds.taskId[0];
+    for (const categoryId of categoryIds) {
+      await connection.execute('INSERT INTO task_categories (task_id, category_id) VALUES (:taskId, :categoryId)', {
+        taskId,
+        categoryId,
+      });
+    }
+    return taskId;
   } finally {
     await connection.close();
   }
@@ -132,7 +144,37 @@ test('creates a task and returns it', async () => {
   assert.equal(body.task.description, 'Cover the CRUD endpoints');
   assert.equal(body.task.priority, 'High');
   assert.equal(body.task.status, 'Pending');
-  assert.equal(body.task.categoryId, null);
+  assert.deepEqual(body.task.categories, []);
+});
+
+test('creates a task with multiple categories', async () => {
+  const user = await createTestUser('multicat');
+  const workId = await createTestCategory(user.userId, 'Work');
+  const urgentId = await createTestCategory(user.userId, 'Urgent');
+
+  const response = await authedRequest(user.token, '/api/tasks', {
+    method: 'POST',
+    body: JSON.stringify(validTaskPayload({ categoryIds: [workId, urgentId] })),
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 201);
+  const returnedIds = body.task.categories.map((c) => c.categoryId).sort();
+  assert.deepEqual(returnedIds, [workId, urgentId].sort());
+});
+
+test('deduplicates repeated categoryIds on create', async () => {
+  const user = await createTestUser('taskdupcat');
+  const workId = await createTestCategory(user.userId, 'Work');
+
+  const response = await authedRequest(user.token, '/api/tasks', {
+    method: 'POST',
+    body: JSON.stringify(validTaskPayload({ categoryIds: [workId, workId] })),
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 201);
+  assert.equal(body.task.categories.length, 1);
 });
 
 test('rejects task creation with a missing title', async () => {
@@ -183,6 +225,18 @@ test('rejects task creation with an invalid dueDate', async () => {
   assert.match(body.error, /valid dueDate/);
 });
 
+test('rejects categoryIds that are not an array of numbers', async () => {
+  const user = await createTestUser('badcategoryids');
+  const response = await authedRequest(user.token, '/api/tasks', {
+    method: 'POST',
+    body: JSON.stringify(validTaskPayload({ categoryIds: ['not-a-number'] })),
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.match(body.error, /categoryIds must be an array of numbers/);
+});
+
 test('rejects a categoryId that belongs to a different user', async () => {
   const owner = await createTestUser('catowner');
   const attacker = await createTestUser('catattacker');
@@ -190,7 +244,23 @@ test('rejects a categoryId that belongs to a different user', async () => {
 
   const response = await authedRequest(attacker.token, '/api/tasks', {
     method: 'POST',
-    body: JSON.stringify(validTaskPayload({ categoryId })),
+    body: JSON.stringify(validTaskPayload({ categoryIds: [categoryId] })),
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.match(body.error, /Invalid category/);
+});
+
+test('rejects if any one of several categoryIds does not belong to the user', async () => {
+  const owner = await createTestUser('catowner2');
+  const attacker = await createTestUser('catattacker2');
+  const ownCategoryId = await createTestCategory(attacker.userId, 'My Own Category');
+  const othersCategoryId = await createTestCategory(owner.userId, 'Not Mine');
+
+  const response = await authedRequest(attacker.token, '/api/tasks', {
+    method: 'POST',
+    body: JSON.stringify(validTaskPayload({ categoryIds: [ownCategoryId, othersCategoryId] })),
   });
   const body = await response.json();
 
@@ -204,12 +274,13 @@ test('accepts a categoryId that belongs to the requesting user', async () => {
 
   const response = await authedRequest(user.token, '/api/tasks', {
     method: 'POST',
-    body: JSON.stringify(validTaskPayload({ categoryId })),
+    body: JSON.stringify(validTaskPayload({ categoryIds: [categoryId] })),
   });
   const body = await response.json();
 
   assert.equal(response.status, 201);
-  assert.equal(body.task.categoryId, categoryId);
+  assert.equal(body.task.categories.length, 1);
+  assert.equal(body.task.categories[0].categoryId, categoryId);
 });
 
 test('lists only the requesting user\'s tasks', async () => {
@@ -291,6 +362,69 @@ test('updates a task\'s fields', async () => {
   assert.equal(response.status, 200);
   assert.equal(body.task.title, 'Updated title');
   assert.equal(body.task.priority, 'Low');
+});
+
+test('replaces a task\'s categories on update', async () => {
+  const user = await createTestUser('updatecat');
+  const workId = await createTestCategory(user.userId, 'Work');
+  const homeId = await createTestCategory(user.userId, 'Home');
+
+  const createResponse = await authedRequest(user.token, '/api/tasks', {
+    method: 'POST',
+    body: JSON.stringify(validTaskPayload({ categoryIds: [workId] })),
+  });
+  const created = (await createResponse.json()).task;
+
+  const response = await authedRequest(user.token, `/api/tasks/${created.taskId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ categoryIds: [homeId] }),
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.task.categories.length, 1);
+  assert.equal(body.task.categories[0].categoryId, homeId);
+});
+
+test('clears a task\'s categories when updated with an empty array', async () => {
+  const user = await createTestUser('clearcat');
+  const workId = await createTestCategory(user.userId, 'Work');
+
+  const createResponse = await authedRequest(user.token, '/api/tasks', {
+    method: 'POST',
+    body: JSON.stringify(validTaskPayload({ categoryIds: [workId] })),
+  });
+  const created = (await createResponse.json()).task;
+
+  const response = await authedRequest(user.token, `/api/tasks/${created.taskId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ categoryIds: [] }),
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(body.task.categories, []);
+});
+
+test('leaves categories untouched when categoryIds is omitted from an update', async () => {
+  const user = await createTestUser('untouchedcat');
+  const workId = await createTestCategory(user.userId, 'Work');
+
+  const createResponse = await authedRequest(user.token, '/api/tasks', {
+    method: 'POST',
+    body: JSON.stringify(validTaskPayload({ categoryIds: [workId] })),
+  });
+  const created = (await createResponse.json()).task;
+
+  const response = await authedRequest(user.token, `/api/tasks/${created.taskId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ title: 'Only title changed' }),
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.task.categories.length, 1);
+  assert.equal(body.task.categories[0].categoryId, workId);
 });
 
 test('rejects an update with no fields', async () => {
@@ -410,6 +544,29 @@ test('deletes a task', async () => {
   assert.equal(getResponse.status, 404);
 });
 
+test('deleting a task removes its category associations', async () => {
+  const user = await createTestUser('deletecat');
+  const workId = await createTestCategory(user.userId, 'Work');
+
+  const createResponse = await authedRequest(user.token, '/api/tasks', {
+    method: 'POST',
+    body: JSON.stringify(validTaskPayload({ categoryIds: [workId] })),
+  });
+  const created = (await createResponse.json()).task;
+
+  await authedRequest(user.token, `/api/tasks/${created.taskId}`, { method: 'DELETE' });
+
+  const connection = await getPool().getConnection();
+  try {
+    const result = await connection.execute('SELECT * FROM task_categories WHERE task_id = :taskId', {
+      taskId: created.taskId,
+    });
+    assert.equal(result.rows.length, 0);
+  } finally {
+    await connection.close();
+  }
+});
+
 test('returns 404 deleting a task owned by a different user', async () => {
   const owner = await createTestUser('xownerdelete');
   const attacker = await createTestUser('xattackerdelete');
@@ -485,14 +642,28 @@ test('filters by categoryId', async () => {
   const workId = await createTestCategory(user.userId, 'Work');
   const personalId = await createTestCategory(user.userId, 'Personal');
   const dueDate = daysFromToday(10);
-  await createTestTaskDirect(user.userId, { categoryId: workId, dueDate });
-  await createTestTaskDirect(user.userId, { categoryId: personalId, dueDate });
+  await createTestTaskDirect(user.userId, { categoryIds: [workId], dueDate });
+  await createTestTaskDirect(user.userId, { categoryIds: [personalId], dueDate });
 
   const response = await listTasks(user.token, `?categoryId=${workId}`);
   const body = await response.json();
 
   assert.equal(body.tasks.length, 1);
-  assert.equal(body.tasks[0].categoryId, workId);
+  assert.ok(body.tasks[0].categories.some((c) => c.categoryId === workId));
+});
+
+test('categoryId filter matches a task that has that category among several', async () => {
+  const user = await createTestUser('filtermulticat');
+  const workId = await createTestCategory(user.userId, 'Work');
+  const urgentId = await createTestCategory(user.userId, 'Urgent');
+  const dueDate = daysFromToday(10);
+  await createTestTaskDirect(user.userId, { categoryIds: [workId, urgentId], dueDate });
+  await createTestTaskDirect(user.userId, { categoryIds: [urgentId], dueDate });
+
+  const response = await listTasks(user.token, `?categoryId=${workId}`);
+  const body = await response.json();
+
+  assert.equal(body.tasks.length, 1);
 });
 
 test('filters by exact dueDate', async () => {
@@ -516,21 +687,21 @@ test('combines multiple filters with AND logic', async () => {
 
   await createTestTaskDirect(user.userId, {
     title: 'Matches everything',
-    categoryId: workId,
+    categoryIds: [workId],
     priority: 'High',
     status: 'Pending',
     dueDate,
   });
   await createTestTaskDirect(user.userId, {
     title: 'Wrong priority',
-    categoryId: workId,
+    categoryIds: [workId],
     priority: 'Low',
     status: 'Pending',
     dueDate,
   });
   await createTestTaskDirect(user.userId, {
     title: 'Wrong category',
-    categoryId: null,
+    categoryIds: [],
     priority: 'High',
     status: 'Pending',
     dueDate,

@@ -39,8 +39,12 @@ function isValidDate(value) {
   return typeof value === 'string' && !Number.isNaN(Date.parse(value));
 }
 
+function isValidCategoryIdsArray(value) {
+  return Array.isArray(value) && value.every((id) => typeof id === 'number');
+}
+
 function validateCreateTask(req, res, next) {
-  const { title, priority, status, dueDate, categoryId } = req.body;
+  const { title, priority, status, dueDate, categoryIds } = req.body;
 
   if (!title || typeof title !== 'string' || !title.trim()) {
     return next(new HttpError(400, 'Title is required'));
@@ -54,16 +58,16 @@ function validateCreateTask(req, res, next) {
   if (!dueDate || !isValidDate(dueDate)) {
     return next(new HttpError(400, 'A valid dueDate is required'));
   }
-  if (categoryId !== undefined && categoryId !== null && typeof categoryId !== 'number') {
-    return next(new HttpError(400, 'categoryId must be a number or null'));
+  if (categoryIds !== undefined && !isValidCategoryIdsArray(categoryIds)) {
+    return next(new HttpError(400, 'categoryIds must be an array of numbers'));
   }
 
   next();
 }
 
 function validateUpdateTask(req, res, next) {
-  const { title, description, priority, status, dueDate, categoryId } = req.body;
-  const hasAnyField = [title, description, categoryId, priority, status, dueDate].some((v) => v !== undefined);
+  const { title, description, priority, status, dueDate, categoryIds } = req.body;
+  const hasAnyField = [title, description, categoryIds, priority, status, dueDate].some((v) => v !== undefined);
 
   if (!hasAnyField) {
     return next(new HttpError(400, 'At least one field must be provided'));
@@ -80,8 +84,8 @@ function validateUpdateTask(req, res, next) {
   if (dueDate !== undefined && !isValidDate(dueDate)) {
     return next(new HttpError(400, 'dueDate must be a valid date'));
   }
-  if (categoryId !== undefined && categoryId !== null && typeof categoryId !== 'number') {
-    return next(new HttpError(400, 'categoryId must be a number or null'));
+  if (categoryIds !== undefined && !isValidCategoryIdsArray(categoryIds)) {
+    return next(new HttpError(400, 'categoryIds must be an array of numbers'));
   }
 
   next();
