@@ -62,3 +62,26 @@ body {
     gap: 0.5rem;
   }
 }
+
+.auth-body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.auth-card {
+  background: #fff;
+  border: 1px solid #e2e2e2;
+  border-radius: 10px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 380px;
+}
+
+.auth-card h1 {
+  margin-top: 0;
+  font-size: 1.4rem;
+  text-align: center;
+}

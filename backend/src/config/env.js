@@ -1,5 +1,12 @@
 const path = require('path');
 
+// Must be set before anything constructs a Date. oracledb converts timezone-less
+// Oracle TIMESTAMP columns (e.g. SYS_EXTRACT_UTC results) to JS Date objects using
+// the Node process's local timezone, not Oracle's session timezone -- so unless the
+// process itself runs in UTC, those values silently come out shifted by the local
+// UTC offset.
+process.env.TZ = 'UTC';
+
 require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 
 const required = ['DB_USER', 'DB_PASSWORD', 'DB_CONNECTION_STRING', 'JWT_SECRET'];

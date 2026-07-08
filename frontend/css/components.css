@@ -136,6 +136,10 @@
   padding: 1rem;
 }
 
+.overlay[hidden] {
+  display: none;
+}
+
 .task-form {
   background: #fff;
   border-radius: 10px;
@@ -188,6 +192,10 @@
   margin-top: 0.4rem;
 }
 
+.new-category-row[hidden] {
+  display: none;
+}
+
 .new-category-row input {
   flex: 1;
 }
@@ -210,4 +218,76 @@
   .task-form {
     max-width: 100%;
   }
+}
+
+.auth-card form label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-top: 0.75rem;
+}
+
+.auth-card form input {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  width: 100%;
+  font-family: inherit;
+}
+
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  padding-right: 2.5rem;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.5rem;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #666;
+  display: flex;
+  align-items: center;
+  padding: 0.25rem;
+}
+
+.password-toggle:hover {
+  color: #1a1a1a;
+}
+
+.btn-block {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.6rem;
+}
+
+.auth-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.auth-links a {
+  color: #2f6fed;
+  text-decoration: none;
+}
+
+.auth-links a:hover {
+  text-decoration: underline;
+}
+
+.reset-form {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e2e2;
 }

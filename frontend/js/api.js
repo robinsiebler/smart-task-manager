@@ -36,6 +36,11 @@ async function apiRequest(path, options = {}) {
 
 const api = {
   isAuthenticated: () => Boolean(getToken()),
+  login: (data) => apiRequest('/users/login', { method: 'POST', body: JSON.stringify(data) }),
+  register: (data) => apiRequest('/users/register', { method: 'POST', body: JSON.stringify(data) }),
+  forgotPassword: (email) =>
+    apiRequest('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+  resetPassword: (data) => apiRequest('/auth/reset-password', { method: 'POST', body: JSON.stringify(data) }),
   getTasks: (query = '') => apiRequest(`/tasks${query}`),
   getTask: (id) => apiRequest(`/tasks/${id}`),
   createTask: (data) => apiRequest('/tasks', { method: 'POST', body: JSON.stringify(data) }),
