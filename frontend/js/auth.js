@@ -66,7 +66,7 @@ function initLoginPage() {
     try {
       const data = await api.login({ identifier, password });
       localStorage.setItem('authToken', data.token);
-      window.location.href = '/';
+      window.location.href = getSafeRedirectTarget();
     } catch (err) {
       showStatusMessage(err.message, true);
     }

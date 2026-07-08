@@ -151,9 +151,15 @@ async function loadDashboard() {
   document.getElementById('dashboard-content').hidden = false;
 }
 
+function wireUpEvents() {
+  document.getElementById('logout-btn').addEventListener('click', () => api.logout());
+}
+
 async function init() {
+  wireUpEvents();
+
   if (!api.isAuthenticated()) {
-    document.getElementById('auth-warning').hidden = false;
+    redirectToLogin();
     return;
   }
 

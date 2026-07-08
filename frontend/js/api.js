@@ -36,6 +36,10 @@ async function apiRequest(path, options = {}) {
 
 const api = {
   isAuthenticated: () => Boolean(getToken()),
+  logout: () => {
+    localStorage.removeItem('authToken');
+    window.location.href = '/login.html';
+  },
   login: (data) => apiRequest('/users/login', { method: 'POST', body: JSON.stringify(data) }),
   register: (data) => apiRequest('/users/register', { method: 'POST', body: JSON.stringify(data) }),
   forgotPassword: (email) =>

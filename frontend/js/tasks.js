@@ -302,6 +302,7 @@ async function handleSaveCategory() {
 function wireUpEvents() {
   document.getElementById('add-task-btn').addEventListener('click', openCreateForm);
   document.getElementById('cancel-form-btn').addEventListener('click', closeForm);
+  document.getElementById('logout-btn').addEventListener('click', () => api.logout());
   form.addEventListener('submit', handleFormSubmit);
 
   document.getElementById('new-category-btn').addEventListener('click', () => {
@@ -323,8 +324,7 @@ async function init() {
   wireUpEvents();
 
   if (!api.isAuthenticated()) {
-    document.getElementById('auth-warning').hidden = false;
-    document.getElementById('add-task-btn').disabled = true;
+    redirectToLogin();
     return;
   }
 
