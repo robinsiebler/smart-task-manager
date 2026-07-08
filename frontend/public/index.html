@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard - Smart Task Manager</title>
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>Dashboard</h1>
+    <nav class="app-nav">
+      <a href="/tasks.html" class="btn btn-secondary">My Tasks</a>
+    </nav>
+  </header>
+
+  <main class="app-main">
+    <p id="auth-warning" class="auth-warning" hidden>
+      You need to be logged in to view your dashboard.
+    </p>
+
+    <p id="status-message" class="status-message" role="status" hidden></p>
+
+    <section id="dashboard-content" hidden>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <span class="stat-card__value" id="stat-total">0</span>
+          <span class="stat-card__label">Total</span>
+        </div>
+        <div class="stat-card stat-card--completed">
+          <span class="stat-card__value" id="stat-completed">0</span>
+          <span class="stat-card__label">Completed</span>
+        </div>
+        <div class="stat-card stat-card--pending">
+          <span class="stat-card__value" id="stat-pending">0</span>
+          <span class="stat-card__label">Pending</span>
+        </div>
+        <div class="stat-card stat-card--overdue">
+          <span class="stat-card__value" id="stat-overdue">0</span>
+          <span class="stat-card__label">Overdue</span>
+        </div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-panel">
+          <h2>By Priority</h2>
+          <div id="priority-donut" class="donut-wrapper"></div>
+          <ul id="priority-legend" class="chart-legend"></ul>
+        </div>
+
+        <div class="chart-panel">
+          <h2>By Category</h2>
+          <div id="category-bars" class="bar-chart"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>
