@@ -74,7 +74,12 @@ async function forgotPassword(email) {
     await passwordResetModel.invalidateActiveTokensForUser(user.userId);
     await passwordResetModel.create({ userId: user.userId, tokenHash, expiresAt });
 
-    console.log(`[Password Reset] Token for ${user.email}: ${token} (expires in ${RESET_TOKEN_TTL_MINUTES} min)`);
+    // Dev-only stand-in for emailing the reset link (see project decisions: email
+    // sending is out of scope). This is a live, single-use credential -- never log
+    // it somewhere a real deployment's log aggregator would capture.
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[Password Reset] Token for ${user.email}: ${token} (expires in ${RESET_TOKEN_TTL_MINUTES} min)`);
+    }
   }
 
   return { message: GENERIC_FORGOT_MESSAGE };
