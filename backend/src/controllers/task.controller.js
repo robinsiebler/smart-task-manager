@@ -1,7 +1,15 @@
 const taskService = require('../services/task.service');
 
 async function list(req, res) {
-  const tasks = await taskService.listTasks(req.user.userId);
+  const { title, status, priority, categoryId, dueDate } = req.query;
+  const filters = {
+    title,
+    status,
+    priority,
+    categoryId: categoryId !== undefined ? Number(categoryId) : undefined,
+    dueDate,
+  };
+  const tasks = await taskService.listTasks(req.user.userId, filters);
   res.status(200).json({ tasks });
 }
 

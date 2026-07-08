@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tasks - Smart Task Manager</title>
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>My Tasks</h1>
+    <nav class="app-nav">
+      <a href="/index.html" class="btn btn-secondary">Dashboard</a>
+      <a href="/profile.html" class="btn btn-secondary">Profile</a>
+      <button id="add-task-btn" class="btn btn-primary" type="button">+ Add Task</button>
+      <button id="logout-btn" class="btn btn-text" type="button">Log Out</button>
+    </nav>
+  </header>
+
+  <main class="app-main">
+    <p id="status-message" class="status-message" role="status" hidden></p>
+
+    <section class="filter-bar">
+      <input type="search" id="filter-title" class="filter-input" placeholder="Search by title&hellip;" />
+
+      <select id="filter-status" class="filter-select">
+        <option value="">All Statuses</option>
+        <option value="Pending">Pending</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Completed">Completed</option>
+        <option value="Cancelled">Cancelled</option>
+      </select>
+
+      <select id="filter-priority" class="filter-select">
+        <option value="">All Priorities</option>
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
+      </select>
+
+      <select id="filter-category" class="filter-select">
+        <option value="">All Categories</option>
+      </select>
+
+      <input type="date" id="filter-due-date" class="filter-input" title="Filter by exact due date" />
+
+      <button type="button" id="clear-filters-btn" class="btn btn-text">Clear Filters</button>
+
+      <select id="sort-select" class="filter-select">
+        <option value="dueDate">Sort: Due Date</option>
+        <option value="priority">Sort: Priority</option>
+        <option value="title">Sort: Title</option>
+        <option value="status">Sort: Status</option>
+      </select>
+    </section>
+
+    <section id="task-list" class="task-list" aria-live="polite"></section>
+  </main>
+
+  <div id="task-form-overlay" class="overlay" hidden>
+    <form id="task-form" class="task-form" novalidate>
+      <h2 id="task-form-title">Add Task</h2>
+      <input type="hidden" id="task-id" />
+
+      <label for="task-title">Title *</label>
+      <input type="text" id="task-title" name="title" maxlength="200" />
+      <p class="field-error" id="title-error"></p>
+
+      <label for="task-description">Description</label>
+      <textarea id="task-description" name="description" rows="3"></textarea>
+
+      <label for="task-priority">Priority *</label>
+      <select id="task-priority" name="priority">
+        <option value="">Select priority</option>
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
+      </select>
+      <p class="field-error" id="priority-error"></p>
+
+      <label for="task-status">Status</label>
+      <select id="task-status" name="status">
+        <option value="Pending">Pending</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Completed">Completed</option>
+        <option value="Cancelled">Cancelled</option>
+      </select>
+
+      <label for="task-due-date">Due Date *</label>
+      <input type="date" id="task-due-date" name="dueDate" />
+      <p class="field-error" id="due-date-error"></p>
+
+      <span id="task-categories-label">Categories</span>
+      <div class="category-row">
+        <div id="task-categories" class="category-checkbox-list" role="group" aria-labelledby="task-categories-label"></div>
+        <button type="button" id="new-category-btn" class="btn btn-secondary">+ New</button>
+      </div>
+
+      <div id="new-category-row" class="new-category-row" hidden>
+        <input type="text" id="new-category-name" placeholder="New category name" maxlength="100" />
+        <button type="button" id="save-category-btn" class="btn btn-secondary">Add</button>
+        <button type="button" id="cancel-category-btn" class="btn btn-text">Cancel</button>
+      </div>
+
+      <p class="field-error" id="form-error"></p>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" id="cancel-form-btn" class="btn btn-text">Cancel</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/tasks.js"></script>
+</body>
+</html>
