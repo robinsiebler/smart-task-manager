@@ -1,8 +1,48 @@
 let categories = [];
 let categoriesById = new Map();
+let currentTasks = [];
+const currentFilters = { title: '', status: '', priority: '', categoryId: '', dueDate: '' };
+let currentSort = 'dueDate';
 
 const form = document.getElementById('task-form');
 const overlay = document.getElementById('task-form-overlay');
+
+function debounce(fn, delay) {
+  let timeoutId;
+  return (...args) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn(...args), delay);
+  };
+}
+
+function buildTaskQuery(filters) {
+  const params = new URLSearchParams();
+  if (filters.title) params.set('title', filters.title);
+  if (filters.status) params.set('status', filters.status);
+  if (filters.priority) params.set('priority', filters.priority);
+  if (filters.categoryId) params.set('categoryId', filters.categoryId);
+  if (filters.dueDate) params.set('dueDate', filters.dueDate);
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+
+function sortTasks(tasks, sortBy) {
+  const sorted = [...tasks];
+
+  if (sortBy === 'priority') {
+    const order = { High: 0, Medium: 1, Low: 2 };
+    sorted.sort((a, b) => order[a.priority] - order[b.priority]);
+  } else if (sortBy === 'title') {
+    sorted.sort((a, b) => a.title.localeCompare(b.title));
+  } else if (sortBy === 'status') {
+    const order = { Pending: 0, 'In Progress': 1, Completed: 2, Cancelled: 3 };
+    sorted.sort((a, b) => order[a.status] - order[b.status]);
+  } else {
+    sorted.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+  }
+
+  return sorted;
+}
 
 function showStatusMessage(message, isError = false) {
   const el = document.getElementById('status-message');
@@ -59,15 +99,18 @@ function renderTaskCard(task) {
   due.textContent = `Due ${formatDate(task.dueDate)}`;
   meta.appendChild(due);
 
+  card.appendChild(meta);
+
   const category = categoriesById.get(task.categoryId);
   if (category) {
+    const categoryRow = document.createElement('div');
+    categoryRow.className = 'task-card__categories';
     const categoryBadge = document.createElement('span');
     categoryBadge.className = 'badge badge--category';
     categoryBadge.textContent = category.name;
-    meta.appendChild(categoryBadge);
+    categoryRow.appendChild(categoryBadge);
+    card.appendChild(categoryRow);
   }
-
-  card.appendChild(meta);
 
   const actions = document.createElement('div');
   actions.className = 'task-card__actions';
@@ -117,8 +160,10 @@ function renderTasks(tasks) {
 }
 
 async function loadTasks() {
-  const data = await api.getTasks();
-  renderTasks(data.tasks);
+  const query = buildTaskQuery(currentFilters);
+  const data = await api.getTasks(query);
+  currentTasks = data.tasks;
+  renderTasks(sortTasks(currentTasks, currentSort));
 }
 
 function populateCategorySelect() {
@@ -138,11 +183,32 @@ function populateCategorySelect() {
   }
 }
 
+function populateCategoryFilterSelect() {
+  const select = document.getElementById('filter-category');
+  const previousValue = select.value;
+  select.textContent = '';
+
+  const allOption = document.createElement('option');
+  allOption.value = '';
+  allOption.textContent = 'All Categories';
+  select.appendChild(allOption);
+
+  for (const category of categories) {
+    const option = document.createElement('option');
+    option.value = String(category.categoryId);
+    option.textContent = category.name;
+    select.appendChild(option);
+  }
+
+  select.value = previousValue;
+}
+
 async function loadCategories() {
   const data = await api.getCategories();
   categories = data.categories;
   categoriesById = new Map(categories.map((c) => [c.categoryId, c]));
   populateCategorySelect();
+  populateCategoryFilterSelect();
 }
 
 function clearErrors() {
@@ -317,6 +383,54 @@ function wireUpEvents() {
 
   overlay.addEventListener('click', (event) => {
     if (event.target === overlay) closeForm();
+  });
+
+  const applyTitleFilter = debounce(async (value) => {
+    currentFilters.title = value.trim();
+    await loadTasks();
+  }, 350);
+
+  document.getElementById('filter-title').addEventListener('input', (event) => {
+    applyTitleFilter(event.target.value);
+  });
+
+  document.getElementById('filter-status').addEventListener('change', async (event) => {
+    currentFilters.status = event.target.value;
+    await loadTasks();
+  });
+
+  document.getElementById('filter-priority').addEventListener('change', async (event) => {
+    currentFilters.priority = event.target.value;
+    await loadTasks();
+  });
+
+  document.getElementById('filter-category').addEventListener('change', async (event) => {
+    currentFilters.categoryId = event.target.value;
+    await loadTasks();
+  });
+
+  document.getElementById('filter-due-date').addEventListener('change', async (event) => {
+    currentFilters.dueDate = event.target.value;
+    await loadTasks();
+  });
+
+  document.getElementById('clear-filters-btn').addEventListener('click', async () => {
+    currentFilters.title = '';
+    currentFilters.status = '';
+    currentFilters.priority = '';
+    currentFilters.categoryId = '';
+    currentFilters.dueDate = '';
+    document.getElementById('filter-title').value = '';
+    document.getElementById('filter-status').value = '';
+    document.getElementById('filter-priority').value = '';
+    document.getElementById('filter-category').value = '';
+    document.getElementById('filter-due-date').value = '';
+    await loadTasks();
+  });
+
+  document.getElementById('sort-select').addEventListener('change', (event) => {
+    currentSort = event.target.value;
+    renderTasks(sortTasks(currentTasks, currentSort));
   });
 }
 

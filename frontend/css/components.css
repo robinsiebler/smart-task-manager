@@ -41,6 +41,12 @@
   gap: 0.4rem;
 }
 
+.task-card__categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
 .task-card__actions {
   display: flex;
   gap: 0.5rem;
@@ -419,5 +425,44 @@
 @media (max-width: 480px) {
   .bar-row {
     grid-template-columns: 70px 1fr 1.5rem;
+  }
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.filter-input,
+.filter-select {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: #fff;
+}
+
+.filter-input {
+  flex: 1 1 180px;
+  min-width: 140px;
+}
+
+.filter-select {
+  flex: 0 1 auto;
+}
+
+@media (max-width: 480px) {
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-input,
+  .filter-select {
+    width: 100%;
   }
 }

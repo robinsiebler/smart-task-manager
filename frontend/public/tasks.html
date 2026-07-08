@@ -20,6 +20,40 @@
   <main class="app-main">
     <p id="status-message" class="status-message" role="status" hidden></p>
 
+    <section class="filter-bar">
+      <input type="search" id="filter-title" class="filter-input" placeholder="Search by title&hellip;" />
+
+      <select id="filter-status" class="filter-select">
+        <option value="">All Statuses</option>
+        <option value="Pending">Pending</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Completed">Completed</option>
+        <option value="Cancelled">Cancelled</option>
+      </select>
+
+      <select id="filter-priority" class="filter-select">
+        <option value="">All Priorities</option>
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
+      </select>
+
+      <select id="filter-category" class="filter-select">
+        <option value="">All Categories</option>
+      </select>
+
+      <input type="date" id="filter-due-date" class="filter-input" title="Filter by exact due date" />
+
+      <button type="button" id="clear-filters-btn" class="btn btn-text">Clear Filters</button>
+
+      <select id="sort-select" class="filter-select">
+        <option value="dueDate">Sort: Due Date</option>
+        <option value="priority">Sort: Priority</option>
+        <option value="title">Sort: Title</option>
+        <option value="status">Sort: Status</option>
+      </select>
+    </section>
+
     <section id="task-list" class="task-list" aria-live="polite"></section>
   </main>
 
