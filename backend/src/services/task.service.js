@@ -11,8 +11,17 @@ async function assertCategoryOwnership(categoryId, userId) {
   }
 }
 
-async function listTasks(userId) {
-  return taskModel.findAllByUser(userId);
+async function listTasks(userId, filters = {}) {
+  const cleanFilters = {};
+  if (filters.title !== undefined && filters.title.trim() !== '') cleanFilters.title = filters.title.trim();
+  if (filters.status !== undefined) cleanFilters.status = filters.status;
+  if (filters.priority !== undefined) cleanFilters.priority = filters.priority;
+  if (filters.categoryId !== undefined && !Number.isNaN(filters.categoryId)) {
+    cleanFilters.categoryId = filters.categoryId;
+  }
+  if (filters.dueDate !== undefined) cleanFilters.dueDate = new Date(filters.dueDate);
+
+  return taskModel.findAllByUser(userId, cleanFilters);
 }
 
 async function getTask(taskId, userId) {
