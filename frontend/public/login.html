@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Log In - Smart Task Manager</title>
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+</head>
+<body class="auth-body">
+  <main class="auth-card">
+    <h1>Log In</h1>
+
+    <p id="status-message" class="status-message" role="status" hidden></p>
+
+    <form id="login-form" novalidate>
+      <label for="login-identifier">Email or Username</label>
+      <input type="text" id="login-identifier" name="identifier" autocomplete="username" />
+      <p class="field-error" id="login-identifier-error"></p>
+
+      <label for="login-password">Password</label>
+      <div class="password-field">
+        <input type="password" id="login-password" name="password" autocomplete="current-password" />
+        <button type="button" class="password-toggle" id="login-password-toggle" aria-label="Show password"></button>
+      </div>
+      <p class="field-error" id="login-password-error"></p>
+
+      <button type="submit" class="btn btn-primary btn-block">Log In</button>
+    </form>
+
+    <div class="auth-links">
+      <a href="/forgot-password.html">Forgot password?</a>
+      <a href="/register.html">Create an account</a>
+    </div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+</body>
+</html>

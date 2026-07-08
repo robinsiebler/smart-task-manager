@@ -39,11 +39,11 @@ async function createTestUser(prefix) {
   let userId;
   try {
     const result = await connection.execute(
-      `INSERT INTO users (name, email, password_hash)
-       VALUES (:name, :email, 'not-a-real-hash')
+      `INSERT INTO users (username, email, password_hash)
+       VALUES (:username, :email, 'not-a-real-hash')
        RETURNING user_id INTO :userId`,
       {
-        name: `Test ${prefix}`,
+        username: `Test ${prefix}`,
         email: uniqueEmail(prefix),
         userId: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
       }

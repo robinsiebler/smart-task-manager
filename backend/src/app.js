@@ -10,6 +10,7 @@ app.use('/api/users', require('./routes/user.routes'));
 app.use('/api/tasks', require('./routes/task.routes'));
 app.use('/api/dashboard', require('./routes/dashboard.routes'));
 app.use('/api/categories', require('./routes/category.routes'));
+app.use('/api/auth', require('./routes/auth.routes'));
 
 app.use(express.static(path.join(__dirname, '../../frontend/public')));
 app.use('/css', express.static(path.join(__dirname, '../../frontend/css')));

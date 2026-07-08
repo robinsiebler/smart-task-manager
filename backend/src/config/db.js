@@ -6,6 +6,10 @@ oracledb.autoCommit = true;
 
 let pool;
 
+function setSessionTimeZoneUtc(connection, requestedTag, callbackFn) {
+  connection.execute("ALTER SESSION SET TIME_ZONE = 'UTC'", callbackFn);
+}
+
 async function initPool() {
   pool = await oracledb.createPool({
     user: config.oracle.user,
@@ -14,6 +18,7 @@ async function initPool() {
     poolMin: config.oracle.poolMin,
     poolMax: config.oracle.poolMax,
     poolIncrement: config.oracle.poolIncrement,
+    sessionCallback: setSessionTimeZoneUtc,
   });
   return pool;
 }

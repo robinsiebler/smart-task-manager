@@ -45,7 +45,7 @@ test('registers a new user and does not return the password hash', async () => {
   const email = uniqueEmail('register');
   try {
     const response = await postJson('/api/users/register', {
-      name: 'Test User',
+      username: 'Test User',
       email,
       password: 'correcthorse123',
     });
@@ -64,9 +64,9 @@ test('registers a new user and does not return the password hash', async () => {
 test('rejects registering a duplicate email with 409', async () => {
   const email = uniqueEmail('dup-register');
   try {
-    await postJson('/api/users/register', { name: 'First', email, password: 'correcthorse123' });
+    await postJson('/api/users/register', { username: 'First', email, password: 'correcthorse123' });
 
-    const response = await postJson('/api/users/register', { name: 'Second', email, password: 'anotherpassword' });
+    const response = await postJson('/api/users/register', { username: 'Second', email, password: 'anotherpassword' });
     const body = await response.json();
 
     assert.equal(response.status, 409);
@@ -76,9 +76,27 @@ test('rejects registering a duplicate email with 409', async () => {
   }
 });
 
+test('rejects registering a duplicate username with 409 and a distinct message from duplicate email', async () => {
+  const username = `dup-username-${Date.now()}`;
+  const emailA = uniqueEmail('dup-username-a');
+  const emailB = uniqueEmail('dup-username-b');
+  try {
+    await postJson('/api/users/register', { username, email: emailA, password: 'correcthorse123' });
+
+    const response = await postJson('/api/users/register', { username, email: emailB, password: 'correcthorse123' });
+    const body = await response.json();
+
+    assert.equal(response.status, 409);
+    assert.match(body.error, /username is already taken/);
+  } finally {
+    await deleteUserByEmail(emailA);
+    await deleteUserByEmail(emailB);
+  }
+});
+
 test('rejects registration with a malformed email with 400', async () => {
   const response = await postJson('/api/users/register', {
-    name: 'Bad Email',
+    username: 'Bad Email',
     email: 'not-an-email',
     password: 'correcthorse123',
   });
@@ -90,7 +108,7 @@ test('rejects registration with a malformed email with 400', async () => {
 
 test('rejects registration with a short password with 400', async () => {
   const response = await postJson('/api/users/register', {
-    name: 'Short Pw',
+    username: 'Short Pw',
     email: uniqueEmail('shortpw'),
     password: 'abc',
   });
@@ -100,13 +118,13 @@ test('rejects registration with a short password with 400', async () => {
   assert.match(body.error, /at least 8 characters/);
 });
 
-test('logs in with correct credentials and returns a verifiable JWT', async () => {
+test('logs in with email as the identifier and returns a verifiable JWT', async () => {
   const email = uniqueEmail('login');
   const password = 'correcthorse123';
   try {
-    await postJson('/api/users/register', { name: 'Login User', email, password });
+    await postJson('/api/users/register', { username: 'Login User', email, password });
 
-    const response = await postJson('/api/users/login', { email, password });
+    const response = await postJson('/api/users/login', { identifier: email, password });
     const body = await response.json();
 
     assert.equal(response.status, 200);
@@ -119,37 +137,55 @@ test('logs in with correct credentials and returns a verifiable JWT', async () =
   }
 });
 
-test('rejects login with the wrong password with a generic 401', async () => {
-  const email = uniqueEmail('wrongpw');
+test('logs in with username as the identifier', async () => {
+  const email = uniqueEmail('login-username');
+  const username = `login-username-${Date.now()}`;
+  const password = 'correcthorse123';
   try {
-    await postJson('/api/users/register', { name: 'Wrong Pw', email, password: 'correcthorse123' });
+    await postJson('/api/users/register', { username, email, password });
 
-    const response = await postJson('/api/users/login', { email, password: 'incorrectpassword' });
+    const response = await postJson('/api/users/login', { identifier: username, password });
     const body = await response.json();
 
-    assert.equal(response.status, 401);
-    assert.equal(body.error, 'Invalid email or password');
+    assert.equal(response.status, 200);
+    assert.equal(body.user.username, username);
+    assert.equal(body.user.email, email);
   } finally {
     await deleteUserByEmail(email);
   }
 });
 
-test('rejects login for a nonexistent email with the same generic 401 message', async () => {
+test('rejects login with the wrong password with a generic 401', async () => {
+  const email = uniqueEmail('wrongpw');
+  try {
+    await postJson('/api/users/register', { username: 'Wrong Pw', email, password: 'correcthorse123' });
+
+    const response = await postJson('/api/users/login', { identifier: email, password: 'incorrectpassword' });
+    const body = await response.json();
+
+    assert.equal(response.status, 401);
+    assert.equal(body.error, 'Invalid email/username or password');
+  } finally {
+    await deleteUserByEmail(email);
+  }
+});
+
+test('rejects login for a nonexistent identifier with the same generic 401 message', async () => {
   const response = await postJson('/api/users/login', {
-    email: uniqueEmail('nobody'),
+    identifier: uniqueEmail('nobody'),
     password: 'correcthorse123',
   });
   const body = await response.json();
 
   assert.equal(response.status, 401);
-  assert.equal(body.error, 'Invalid email or password');
+  assert.equal(body.error, 'Invalid email/username or password');
 });
 
 test('stores the password as a bcrypt hash, never plaintext', async () => {
   const email = uniqueEmail('hash-check');
   const password = 'correcthorse123';
   try {
-    await postJson('/api/users/register', { name: 'Hash Check', email, password });
+    await postJson('/api/users/register', { username: 'Hash Check', email, password });
 
     const connection = await getPool().getConnection();
     let storedHash;

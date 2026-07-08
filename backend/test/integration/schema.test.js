@@ -25,11 +25,11 @@ after(async () => {
 beforeEach(async () => {
   await withConnection(async (connection) => {
     const result = await connection.execute(
-      `INSERT INTO users (name, email, password_hash)
-       VALUES (:name, :email, :password_hash)
+      `INSERT INTO users (username, email, password_hash)
+       VALUES (:username, :email, :password_hash)
        RETURNING user_id INTO :user_id`,
       {
-        name: 'Schema Test User',
+        username: 'Schema Test User',
         email: `schema.test.${Date.now()}.${Math.random().toString(36).slice(2)}@example.com`,
         password_hash: 'not-a-real-hash',
         user_id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
@@ -191,15 +191,37 @@ test('enforces unique (user_id, name) on categories', async () => {
 test('enforces unique email on users', async () => {
   await withConnection(async (connection) => {
     const email = `dup.${Date.now()}@example.com`;
-    await connection.execute("INSERT INTO users (name, email, password_hash) VALUES ('Dup A', :email, 'hash')", {
-      email,
-    });
+    await connection.execute(
+      "INSERT INTO users (username, email, password_hash) VALUES ('Dup Username A', :email, 'hash')",
+      { email }
+    );
     await assert.rejects(
-      connection.execute("INSERT INTO users (name, email, password_hash) VALUES ('Dup B', :email, 'hash')", {
-        email,
-      }),
+      connection.execute(
+        "INSERT INTO users (username, email, password_hash) VALUES ('Dup Username B', :email, 'hash')",
+        { email }
+      ),
       /ORA-00001/
     );
     await connection.execute('DELETE FROM users WHERE email = :email', { email });
+  });
+});
+
+test('enforces unique username on users', async () => {
+  await withConnection(async (connection) => {
+    const username = `dup-username-${Date.now()}`;
+    const emailA = `dup-username-a.${Date.now()}@example.com`;
+    const emailB = `dup-username-b.${Date.now()}@example.com`;
+    await connection.execute('INSERT INTO users (username, email, password_hash) VALUES (:username, :email, \'hash\')', {
+      username,
+      email: emailA,
+    });
+    await assert.rejects(
+      connection.execute('INSERT INTO users (username, email, password_hash) VALUES (:username, :email, \'hash\')', {
+        username,
+        email: emailB,
+      }),
+      /ORA-00001/
+    );
+    await connection.execute('DELETE FROM users WHERE username = :username', { username });
   });
 });

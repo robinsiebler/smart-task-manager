@@ -4,10 +4,10 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
 
 function validateRegister(req, res, next) {
-  const { name, email, password } = req.body;
+  const { username, email, password } = req.body;
 
-  if (!name || typeof name !== 'string' || !name.trim()) {
-    return next(new HttpError(400, 'Name is required'));
+  if (!username || typeof username !== 'string' || !username.trim()) {
+    return next(new HttpError(400, 'Username is required'));
   }
   if (!email || !EMAIL_PATTERN.test(email)) {
     return next(new HttpError(400, 'A valid email is required'));
@@ -20,10 +20,10 @@ function validateRegister(req, res, next) {
 }
 
 function validateLogin(req, res, next) {
-  const { email, password } = req.body;
+  const { identifier, password } = req.body;
 
-  if (!email || !EMAIL_PATTERN.test(email)) {
-    return next(new HttpError(400, 'A valid email is required'));
+  if (!identifier || typeof identifier !== 'string' || !identifier.trim()) {
+    return next(new HttpError(400, 'Email or username is required'));
   }
   if (!password || typeof password !== 'string') {
     return next(new HttpError(400, 'Password is required'));
@@ -127,6 +127,32 @@ function validateCreateCategory(req, res, next) {
   next();
 }
 
+function validateForgotPassword(req, res, next) {
+  const { email } = req.body;
+
+  if (!email || !EMAIL_PATTERN.test(email)) {
+    return next(new HttpError(400, 'A valid email is required'));
+  }
+
+  next();
+}
+
+function validateResetPassword(req, res, next) {
+  const { email, token, newPassword } = req.body;
+
+  if (!email || !EMAIL_PATTERN.test(email)) {
+    return next(new HttpError(400, 'A valid email is required'));
+  }
+  if (!token || typeof token !== 'string' || !token.trim()) {
+    return next(new HttpError(400, 'A reset token is required'));
+  }
+  if (!newPassword || typeof newPassword !== 'string' || newPassword.length < MIN_PASSWORD_LENGTH) {
+    return next(new HttpError(400, `Password must be at least ${MIN_PASSWORD_LENGTH} characters`));
+  }
+
+  next();
+}
+
 module.exports = {
   validateRegister,
   validateLogin,
@@ -135,4 +161,6 @@ module.exports = {
   validateTaskIdParam,
   validateTaskFilters,
   validateCreateCategory,
+  validateForgotPassword,
+  validateResetPassword,
 };
