@@ -18,12 +18,36 @@ function mapTaskRow(row) {
   };
 }
 
-async function findAllByUser(userId) {
+async function findAllByUser(userId, filters = {}) {
+  const whereClauses = ['user_id = :userId'];
+  const binds = { userId };
+
+  if (filters.title !== undefined) {
+    whereClauses.push("UPPER(title) LIKE UPPER(:title) ESCAPE '\\'");
+    binds.title = `%${filters.title.replace(/[\\%_]/g, '\\$&')}%`;
+  }
+  if (filters.status !== undefined) {
+    whereClauses.push('status = :status');
+    binds.status = filters.status;
+  }
+  if (filters.priority !== undefined) {
+    whereClauses.push('priority = :priority');
+    binds.priority = filters.priority;
+  }
+  if (filters.categoryId !== undefined) {
+    whereClauses.push('category_id = :categoryId');
+    binds.categoryId = filters.categoryId;
+  }
+  if (filters.dueDate !== undefined) {
+    whereClauses.push('due_date = :dueDate');
+    binds.dueDate = filters.dueDate;
+  }
+
   const connection = await getPool().getConnection();
   try {
     const result = await connection.execute(
-      `SELECT ${SELECT_COLUMNS} FROM tasks WHERE user_id = :userId ORDER BY due_date ASC, task_id ASC`,
-      { userId }
+      `SELECT ${SELECT_COLUMNS} FROM tasks WHERE ${whereClauses.join(' AND ')} ORDER BY due_date ASC, task_id ASC`,
+      binds
     );
     return result.rows.map(mapTaskRow);
   } finally {

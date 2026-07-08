@@ -95,10 +95,30 @@ function validateTaskIdParam(req, res, next) {
   next();
 }
 
+function validateTaskFilters(req, res, next) {
+  const { status, priority, categoryId, dueDate } = req.query;
+
+  if (status !== undefined && !STATUS_VALUES.includes(status)) {
+    return next(new HttpError(400, `status must be one of: ${STATUS_VALUES.join(', ')}`));
+  }
+  if (priority !== undefined && !PRIORITY_VALUES.includes(priority)) {
+    return next(new HttpError(400, `priority must be one of: ${PRIORITY_VALUES.join(', ')}`));
+  }
+  if (categoryId !== undefined && !/^\d+$/.test(categoryId)) {
+    return next(new HttpError(400, 'categoryId must be a positive integer'));
+  }
+  if (dueDate !== undefined && !isValidDate(dueDate)) {
+    return next(new HttpError(400, 'dueDate must be a valid date'));
+  }
+
+  next();
+}
+
 module.exports = {
   validateRegister,
   validateLogin,
   validateCreateTask,
   validateUpdateTask,
   validateTaskIdParam,
+  validateTaskFilters,
 };
