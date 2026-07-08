@@ -10,4 +10,9 @@ async function create(req, res) {
   res.status(201).json({ category });
 }
 
-module.exports = { list, create };
+async function remove(req, res) {
+  await categoryService.deleteCategory(req.user.userId, Number(req.params.id));
+  res.status(204).send();
+}
+
+module.exports = { list, create, remove };

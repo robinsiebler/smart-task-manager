@@ -172,21 +172,46 @@ function getCheckedCategoryIds() {
   );
 }
 
+async function handleDeleteCategory(category) {
+  if (!window.confirm(`Delete category "${category.name}"? It will be removed from any tasks that have it.`)) {
+    return;
+  }
+  try {
+    await api.deleteCategory(category.categoryId);
+    showStatusMessage('Category deleted.');
+    await loadCategories();
+    await loadTasks();
+  } catch (err) {
+    showStatusMessage(err.message, true);
+  }
+}
+
 function populateCategoryCheckboxes(checkedIds = []) {
   const container = document.getElementById('task-categories');
   container.textContent = '';
 
   for (const category of categories) {
-    const label = document.createElement('label');
+    const item = document.createElement('span');
+    item.className = 'category-checkbox-item';
 
+    const label = document.createElement('label');
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.value = String(category.categoryId);
     checkbox.checked = checkedIds.includes(category.categoryId);
-
     label.appendChild(checkbox);
     label.append(category.name);
-    container.appendChild(label);
+    item.appendChild(label);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'category-delete-btn';
+    deleteBtn.textContent = '×';
+    deleteBtn.setAttribute('aria-label', `Delete category ${category.name}`);
+    deleteBtn.addEventListener('click', () => handleDeleteCategory(category));
+    item.appendChild(deleteBtn);
+
+    container.appendChild(item);
   }
 }
 

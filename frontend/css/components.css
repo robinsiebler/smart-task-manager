@@ -207,6 +207,22 @@
   font-weight: normal;
 }
 
+.category-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.category-delete-btn {
+  border: none;
+  background: none;
+  color: #b3261e;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.2rem;
+}
+
 .new-category-row {
   display: flex;
   gap: 0.5rem;

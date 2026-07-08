@@ -99,6 +99,14 @@ function validateTaskIdParam(req, res, next) {
   next();
 }
 
+function validateCategoryIdParam(req, res, next) {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return next(new HttpError(400, 'Invalid category id'));
+  }
+  next();
+}
+
 function validateTaskFilters(req, res, next) {
   const { status, priority, categoryId, dueDate } = req.query;
 
@@ -165,6 +173,7 @@ module.exports = {
   validateTaskIdParam,
   validateTaskFilters,
   validateCreateCategory,
+  validateCategoryIdParam,
   validateForgotPassword,
   validateResetPassword,
 };
