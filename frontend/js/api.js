@@ -49,4 +49,5 @@ const api = {
   completeTask: (id) => apiRequest(`/tasks/${id}/complete`, { method: 'PATCH' }),
   getCategories: () => apiRequest('/categories'),
   createCategory: (name) => apiRequest('/categories', { method: 'POST', body: JSON.stringify({ name }) }),
+  getDashboard: () => apiRequest('/dashboard'),
 };
