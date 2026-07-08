@@ -132,6 +132,113 @@ test('allows the same category name across different users', async () => {
   assert.equal(responseB.status, 201);
 });
 
+test('renames a category and returns it', async () => {
+  const user = await createTestUser('renamecat');
+  const createResponse = await authedRequest(user.token, '/api/categories', {
+    method: 'POST',
+    body: JSON.stringify({ name: 'Old Name' }),
+  });
+  const { category } = await createResponse.json();
+
+  const renameResponse = await authedRequest(user.token, `/api/categories/${category.categoryId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ name: 'New Name' }),
+  });
+  const renameBody = await renameResponse.json();
+
+  assert.equal(renameResponse.status, 200);
+  assert.equal(renameBody.category.name, 'New Name');
+  assert.equal(renameBody.category.categoryId, category.categoryId);
+
+  const listResponse = await authedRequest(user.token, '/api/categories');
+  const listBody = await listResponse.json();
+  assert.deepEqual(
+    listBody.categories.map((c) => c.name),
+    ['New Name']
+  );
+});
+
+test('rejects renaming a category with a missing name', async () => {
+  const user = await createTestUser('renamenoname');
+  const createResponse = await authedRequest(user.token, '/api/categories', {
+    method: 'POST',
+    body: JSON.stringify({ name: 'Has A Name' }),
+  });
+  const { category } = await createResponse.json();
+
+  const response = await authedRequest(user.token, `/api/categories/${category.categoryId}`, {
+    method: 'PUT',
+    body: JSON.stringify({}),
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.match(body.error, /Category name is required/);
+});
+
+test('rejects renaming a category to a name already in use', async () => {
+  const user = await createTestUser('renamedupe');
+  await authedRequest(user.token, '/api/categories', {
+    method: 'POST',
+    body: JSON.stringify({ name: 'Taken' }),
+  });
+  const createResponse = await authedRequest(user.token, '/api/categories', {
+    method: 'POST',
+    body: JSON.stringify({ name: 'Available' }),
+  });
+  const { category } = await createResponse.json();
+
+  const response = await authedRequest(user.token, `/api/categories/${category.categoryId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ name: 'Taken' }),
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 409);
+  assert.match(body.error, /already exists/);
+});
+
+test('rejects renaming a category that belongs to another user', async () => {
+  const owner = await createTestUser('renameowner');
+  const attacker = await createTestUser('renameattacker');
+  const createResponse = await authedRequest(owner.token, '/api/categories', {
+    method: 'POST',
+    body: JSON.stringify({ name: 'Owned' }),
+  });
+  const { category } = await createResponse.json();
+
+  const response = await authedRequest(attacker.token, `/api/categories/${category.categoryId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ name: 'Hijacked' }),
+  });
+  assert.equal(response.status, 404);
+
+  const listResponse = await authedRequest(owner.token, '/api/categories');
+  const listBody = await listResponse.json();
+  assert.deepEqual(
+    listBody.categories.map((c) => c.name),
+    ['Owned']
+  );
+});
+
+test('rejects renaming a nonexistent category', async () => {
+  const user = await createTestUser('renamemissing');
+  const response = await authedRequest(user.token, '/api/categories/999999999', {
+    method: 'PUT',
+    body: JSON.stringify({ name: 'Anything' }),
+  });
+  assert.equal(response.status, 404);
+});
+
+test('rejects renaming a category with an invalid id', async () => {
+  const user = await createTestUser('renamebadid');
+  const response = await authedRequest(user.token, '/api/categories/not-a-number', {
+    method: 'PUT',
+    body: JSON.stringify({ name: 'Anything' }),
+  });
+  assert.equal(response.status, 400);
+});
+
 test('deletes a category and returns 204', async () => {
   const user = await createTestUser('deletecat');
   const createResponse = await authedRequest(user.token, '/api/categories', {

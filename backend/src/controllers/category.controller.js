@@ -10,9 +10,14 @@ async function create(req, res) {
   res.status(201).json({ category });
 }
 
+async function rename(req, res) {
+  const category = await categoryService.renameCategory(req.user.userId, Number(req.params.id), req.body.name);
+  res.status(200).json({ category });
+}
+
 async function remove(req, res) {
   await categoryService.deleteCategory(req.user.userId, Number(req.params.id));
   res.status(204).send();
 }
 
-module.exports = { list, create, remove };
+module.exports = { list, create, rename, remove };

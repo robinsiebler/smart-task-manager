@@ -10,6 +10,7 @@ router.use(authMiddleware);
 
 router.get('/', asyncHandler(categoryController.list));
 router.post('/', validateCreateCategory, asyncHandler(categoryController.create));
+router.put('/:id', validateCategoryIdParam, validateCreateCategory, asyncHandler(categoryController.rename));
 router.delete('/:id', validateCategoryIdParam, asyncHandler(categoryController.remove));
 
 module.exports = router;

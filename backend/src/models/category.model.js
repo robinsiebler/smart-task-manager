@@ -39,6 +39,19 @@ async function create({ userId, name }) {
   return { categoryId, userId, name };
 }
 
+async function update(categoryId, userId, name) {
+  const connection = await getPool().getConnection();
+  try {
+    const result = await connection.execute(
+      'UPDATE categories SET name = :name WHERE category_id = :categoryId AND user_id = :userId',
+      { name, categoryId, userId }
+    );
+    return result.rowsAffected > 0;
+  } finally {
+    await connection.close();
+  }
+}
+
 async function remove(categoryId, userId) {
   const connection = await getPool().getConnection();
   try {
@@ -52,4 +65,4 @@ async function remove(categoryId, userId) {
   }
 }
 
-module.exports = { findAllByUser, create, remove };
+module.exports = { findAllByUser, create, update, remove };
