@@ -172,6 +172,22 @@ function getCheckedCategoryIds() {
   );
 }
 
+async function handleRenameCategory(category) {
+  const newName = window.prompt('Rename category', category.name);
+  if (newName === null) return;
+  const trimmed = newName.trim();
+  if (!trimmed || trimmed === category.name) return;
+
+  try {
+    await api.updateCategory(category.categoryId, trimmed);
+    showStatusMessage('Category renamed.');
+    await loadCategories();
+    await loadTasks();
+  } catch (err) {
+    showStatusMessage(err.message, true);
+  }
+}
+
 async function handleDeleteCategory(category) {
   if (!window.confirm(`Delete category "${category.name}"? It will be removed from any tasks that have it.`)) {
     return;
@@ -202,6 +218,14 @@ function populateCategoryCheckboxes(checkedIds = []) {
     label.appendChild(checkbox);
     label.append(category.name);
     item.appendChild(label);
+
+    const renameBtn = document.createElement('button');
+    renameBtn.type = 'button';
+    renameBtn.className = 'category-rename-btn';
+    renameBtn.textContent = '✎';
+    renameBtn.setAttribute('aria-label', `Rename category ${category.name}`);
+    renameBtn.addEventListener('click', () => handleRenameCategory(category));
+    item.appendChild(renameBtn);
 
     const deleteBtn = document.createElement('button');
     deleteBtn.type = 'button';

@@ -16,6 +16,23 @@ async function createCategory(userId, name) {
   }
 }
 
+async function renameCategory(userId, categoryId, name) {
+  const trimmedName = name.trim();
+  let updated;
+  try {
+    updated = await categoryModel.update(categoryId, userId, trimmedName);
+  } catch (err) {
+    if (err.errorNum === 1 || /ORA-00001/.test(err.message)) {
+      throw new HttpError(409, 'A category with this name already exists');
+    }
+    throw err;
+  }
+  if (!updated) {
+    throw new HttpError(404, 'Category not found');
+  }
+  return { categoryId, userId, name: trimmedName };
+}
+
 async function deleteCategory(userId, categoryId) {
   const deleted = await categoryModel.remove(categoryId, userId);
   if (!deleted) {
@@ -23,4 +40,4 @@ async function deleteCategory(userId, categoryId) {
   }
 }
 
-module.exports = { listCategories, createCategory, deleteCategory };
+module.exports = { listCategories, createCategory, renameCategory, deleteCategory };
