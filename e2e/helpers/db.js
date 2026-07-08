@@ -19,4 +19,4 @@ async function deleteUser(userId) {
   }
 }
 
-module.exports = { deleteUser };
+module.exports = { deleteUser, ensurePool };

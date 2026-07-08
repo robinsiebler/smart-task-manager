@@ -102,3 +102,60 @@ test('sorts the task list by title', async ({ page, request }) => {
 
   await expect(page.locator('.task-card__title')).toHaveText(['Apple task', 'Zebra task']);
 });
+
+test('sorts the task list by priority', async ({ page, request }) => {
+  const { user, token } = await setup(request, 'e2esortpriority');
+  createdUserIds.push(user.userId);
+  await createTask(request, token, { title: 'Low priority task', priority: 'Low' });
+  await createTask(request, token, { title: 'High priority task', priority: 'High' });
+  await createTask(request, token, { title: 'Medium priority task', priority: 'Medium' });
+
+  await loginAs(page, user.email, user.password);
+  await page.selectOption('#sort-select', 'priority');
+
+  await expect(page.locator('.task-card__title')).toHaveText([
+    'High priority task',
+    'Medium priority task',
+    'Low priority task',
+  ]);
+});
+
+test('sorts the task list by status', async ({ page, request }) => {
+  const { user, token } = await setup(request, 'e2esortstatus');
+  createdUserIds.push(user.userId);
+  await createTask(request, token, { title: 'Completed task', status: 'Completed' });
+  await createTask(request, token, { title: 'Pending task', status: 'Pending' });
+
+  await loginAs(page, user.email, user.password);
+  await page.selectOption('#sort-select', 'status');
+
+  await expect(page.locator('.task-card__title')).toHaveText(['Pending task', 'Completed task']);
+});
+
+test('filters the task list by exact due date', async ({ page, request }) => {
+  const { user, token } = await setup(request, 'e2efilterduedate');
+  createdUserIds.push(user.userId);
+  await createTask(request, token, { title: 'Due in August', dueDate: '2026-08-01' });
+  await createTask(request, token, { title: 'Due in September', dueDate: '2026-09-01' });
+
+  await loginAs(page, user.email, user.password);
+  await page.fill('#filter-due-date', '2026-08-01');
+
+  await expect(page.locator('.task-card')).toHaveCount(1);
+  await expect(page.locator('.task-card')).toContainText('Due in August');
+});
+
+test('combines multiple filters with AND logic', async ({ page, request }) => {
+  const { user, token } = await setup(request, 'e2efiltercombo');
+  createdUserIds.push(user.userId);
+  await createTask(request, token, { title: 'Matches both filters', priority: 'High', status: 'Pending' });
+  await createTask(request, token, { title: 'Wrong priority', priority: 'Low', status: 'Pending' });
+  await createTask(request, token, { title: 'Wrong status', priority: 'High', status: 'Completed' });
+
+  await loginAs(page, user.email, user.password);
+  await page.selectOption('#filter-priority', 'High');
+  await page.selectOption('#filter-status', 'Pending');
+
+  await expect(page.locator('.task-card')).toHaveCount(1);
+  await expect(page.locator('.task-card')).toContainText('Matches both filters');
+});
