@@ -165,6 +165,46 @@ function validateResetPassword(req, res, next) {
   next();
 }
 
+function validateUpdateProfile(req, res, next) {
+  const { username, email } = req.body;
+  const hasAnyField = [username, email].some((v) => v !== undefined);
+
+  if (!hasAnyField) {
+    return next(new HttpError(400, 'At least one field must be provided'));
+  }
+  if (username !== undefined && (typeof username !== 'string' || !username.trim())) {
+    return next(new HttpError(400, 'Username must be a non-empty string'));
+  }
+  if (email !== undefined && !EMAIL_PATTERN.test(email)) {
+    return next(new HttpError(400, 'A valid email is required'));
+  }
+
+  next();
+}
+
+function validateChangePassword(req, res, next) {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || typeof currentPassword !== 'string') {
+    return next(new HttpError(400, 'Current password is required'));
+  }
+  if (!newPassword || typeof newPassword !== 'string' || newPassword.length < MIN_PASSWORD_LENGTH) {
+    return next(new HttpError(400, `Password must be at least ${MIN_PASSWORD_LENGTH} characters`));
+  }
+
+  next();
+}
+
+function validateDeleteAccount(req, res, next) {
+  const { password } = req.body;
+
+  if (!password || typeof password !== 'string') {
+    return next(new HttpError(400, 'Password is required'));
+  }
+
+  next();
+}
+
 module.exports = {
   validateRegister,
   validateLogin,
@@ -176,4 +216,7 @@ module.exports = {
   validateCategoryIdParam,
   validateForgotPassword,
   validateResetPassword,
+  validateUpdateProfile,
+  validateChangePassword,
+  validateDeleteAccount,
 };

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile - Smart Task Manager</title>
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>Profile</h1>
+    <nav class="app-nav">
+      <a href="/index.html" class="btn btn-secondary">Dashboard</a>
+      <a href="/tasks.html" class="btn btn-secondary">My Tasks</a>
+      <button id="logout-btn" class="btn btn-text" type="button">Log Out</button>
+    </nav>
+  </header>
+
+  <main class="app-main">
+    <p id="status-message" class="status-message" role="status" hidden></p>
+
+    <section class="profile-section">
+      <h2>Account Info</h2>
+      <form id="profile-form" class="task-form" novalidate>
+        <label for="profile-username">Username</label>
+        <input type="text" id="profile-username" name="username" maxlength="100" />
+        <p class="field-error" id="profile-username-error"></p>
+
+        <label for="profile-email">Email</label>
+        <input type="email" id="profile-email" name="email" />
+        <p class="field-error" id="profile-email-error"></p>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="profile-section">
+      <h2>Change Password</h2>
+      <form id="password-form" class="task-form" novalidate>
+        <label for="current-password">Current Password</label>
+        <input type="password" id="current-password" name="currentPassword" autocomplete="current-password" />
+        <p class="field-error" id="current-password-error"></p>
+
+        <label for="new-password">New Password</label>
+        <input type="password" id="new-password" name="newPassword" autocomplete="new-password" />
+        <p class="field-error" id="new-password-error"></p>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Change Password</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="profile-section profile-section--danger">
+      <h2>Danger Zone</h2>
+      <p>Deleting your account permanently removes all of your tasks and categories. This cannot be undone.</p>
+      <button type="button" id="show-delete-btn" class="btn btn-danger">Delete Account</button>
+
+      <form id="delete-form" class="task-form" novalidate hidden>
+        <label for="delete-password">Confirm your password to delete your account</label>
+        <input type="password" id="delete-password" name="password" autocomplete="current-password" />
+        <p class="field-error" id="delete-password-error"></p>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-danger">Permanently Delete My Account</button>
+          <button type="button" id="cancel-delete-btn" class="btn btn-text">Cancel</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/profile.js"></script>
+</body>
+</html>

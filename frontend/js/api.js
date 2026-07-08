@@ -56,4 +56,8 @@ const api = {
   updateCategory: (id, name) => apiRequest(`/categories/${id}`, { method: 'PUT', body: JSON.stringify({ name }) }),
   deleteCategory: (id) => apiRequest(`/categories/${id}`, { method: 'DELETE' }),
   getDashboard: () => apiRequest('/dashboard'),
+  getMe: () => apiRequest('/users/me'),
+  updateProfile: (data) => apiRequest('/users/me', { method: 'PUT', body: JSON.stringify(data) }),
+  changePassword: (data) => apiRequest('/users/me/password', { method: 'PUT', body: JSON.stringify(data) }),
+  deleteAccount: (password) => apiRequest('/users/me', { method: 'DELETE', body: JSON.stringify({ password }) }),
 };

@@ -253,6 +253,20 @@
   margin-top: 1rem;
 }
 
+.profile-section {
+  margin-bottom: 1.5rem;
+}
+
+.profile-section h2 {
+  margin-bottom: 0.5rem;
+}
+
+.profile-section--danger {
+  border: 1px solid #f3c2c2;
+  border-radius: 10px;
+  padding: 1rem;
+}
+
 @media (max-width: 480px) {
   .task-list {
     grid-template-columns: 1fr;
