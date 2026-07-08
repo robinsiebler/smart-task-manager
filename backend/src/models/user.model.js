@@ -42,6 +42,21 @@ async function findByUsername(username) {
   }
 }
 
+async function findById(userId) {
+  const connection = await getPool().getConnection();
+  try {
+    const result = await connection.execute(
+      `SELECT user_id, username, email, password_hash, created_date
+       FROM users
+       WHERE user_id = :userId`,
+      { userId }
+    );
+    return mapUserRow(result.rows[0]);
+  } finally {
+    await connection.close();
+  }
+}
+
 async function create({ username, email, passwordHash }) {
   const connection = await getPool().getConnection();
   try {
@@ -74,4 +89,40 @@ async function updatePasswordHash(userId, passwordHash) {
   }
 }
 
-module.exports = { findByEmail, findByUsername, create, updatePasswordHash };
+async function updateProfile(userId, fields) {
+  const setClauses = [];
+  const binds = { userId };
+
+  if (fields.username !== undefined) {
+    setClauses.push('username = :username');
+    binds.username = fields.username;
+  }
+  if (fields.email !== undefined) {
+    setClauses.push('email = :email');
+    binds.email = fields.email;
+  }
+
+  if (setClauses.length === 0) {
+    return findById(userId);
+  }
+
+  const connection = await getPool().getConnection();
+  try {
+    await connection.execute(`UPDATE users SET ${setClauses.join(', ')} WHERE user_id = :userId`, binds);
+  } finally {
+    await connection.close();
+  }
+  return findById(userId);
+}
+
+async function remove(userId) {
+  const connection = await getPool().getConnection();
+  try {
+    const result = await connection.execute('DELETE FROM users WHERE user_id = :userId', { userId });
+    return result.rowsAffected > 0;
+  } finally {
+    await connection.close();
+  }
+}
+
+module.exports = { findByEmail, findByUsername, findById, create, updatePasswordHash, updateProfile, remove };
