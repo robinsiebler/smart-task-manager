@@ -114,6 +114,19 @@ function validateTaskFilters(req, res, next) {
   next();
 }
 
+function validateCreateCategory(req, res, next) {
+  const { name } = req.body;
+
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    return next(new HttpError(400, 'Category name is required'));
+  }
+  if (name.trim().length > 100) {
+    return next(new HttpError(400, 'Category name must be 100 characters or fewer'));
+  }
+
+  next();
+}
+
 module.exports = {
   validateRegister,
   validateLogin,
@@ -121,4 +134,5 @@ module.exports = {
   validateUpdateTask,
   validateTaskIdParam,
   validateTaskFilters,
+  validateCreateCategory,
 };
