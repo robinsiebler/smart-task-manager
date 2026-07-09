@@ -70,6 +70,7 @@ module.exports = [
         toDateInputValue: 'readonly',
         redirectToLogin: 'readonly',
         getSafeRedirectTarget: 'readonly',
+        attachPasswordToggle: 'readonly',
       },
     },
   },
