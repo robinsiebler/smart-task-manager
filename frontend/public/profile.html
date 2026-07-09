@@ -41,11 +41,17 @@
       <h2>Change Password</h2>
       <form id="password-form" class="task-form" novalidate>
         <label for="current-password">Current Password</label>
-        <input type="password" id="current-password" name="currentPassword" autocomplete="current-password" />
+        <div class="password-field">
+          <input type="password" id="current-password" name="currentPassword" autocomplete="current-password" />
+          <button type="button" class="password-toggle" id="current-password-toggle" aria-label="Show password"></button>
+        </div>
         <p class="field-error" id="current-password-error"></p>
 
         <label for="new-password">New Password</label>
-        <input type="password" id="new-password" name="newPassword" autocomplete="new-password" />
+        <div class="password-field">
+          <input type="password" id="new-password" name="newPassword" autocomplete="new-password" />
+          <button type="button" class="password-toggle" id="new-password-toggle" aria-label="Show password"></button>
+        </div>
         <p class="field-error" id="new-password-error"></p>
 
         <div class="form-actions">
@@ -61,7 +67,10 @@
 
       <form id="delete-form" class="task-form" novalidate hidden>
         <label for="delete-password">Confirm your password to delete your account</label>
-        <input type="password" id="delete-password" name="password" autocomplete="current-password" />
+        <div class="password-field">
+          <input type="password" id="delete-password" name="password" autocomplete="current-password" />
+          <button type="button" class="password-toggle" id="delete-password-toggle" aria-label="Show password"></button>
+        </div>
         <p class="field-error" id="delete-password-error"></p>
 
         <div class="form-actions">

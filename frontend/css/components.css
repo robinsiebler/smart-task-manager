@@ -159,6 +159,10 @@
   gap: 0.4rem;
 }
 
+.task-form[hidden] {
+  display: none;
+}
+
 .task-form label {
   font-weight: 600;
   font-size: 0.85rem;
@@ -174,6 +178,10 @@
   font-size: 0.95rem;
   width: 100%;
   font-family: inherit;
+}
+
+.task-form textarea {
+  flex-shrink: 0;
 }
 
 .field-error {
