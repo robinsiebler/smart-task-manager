@@ -1,4 +1,4 @@
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_PATTERN = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const MIN_PASSWORD_LENGTH = 8;
 
 function showStatusMessage(message, isError = false) {
@@ -103,6 +103,10 @@ async function handleDeleteSubmit(event) {
 }
 
 function wireUpEvents() {
+  attachPasswordToggle('current-password', 'current-password-toggle');
+  attachPasswordToggle('new-password', 'new-password-toggle');
+  attachPasswordToggle('delete-password', 'delete-password-toggle');
+
   document.getElementById('logout-btn').addEventListener('click', () => api.logout());
   document.getElementById('profile-form').addEventListener('submit', handleProfileSubmit);
   document.getElementById('password-form').addEventListener('submit', handlePasswordSubmit);

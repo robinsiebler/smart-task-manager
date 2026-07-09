@@ -1,6 +1,6 @@
 const HttpError = require('../utils/HttpError');
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_PATTERN = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_USERNAME_LENGTH = 100;
 const MAX_EMAIL_LENGTH = 255;
